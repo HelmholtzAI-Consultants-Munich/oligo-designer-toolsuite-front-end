@@ -12,6 +12,8 @@ parent: Development
 The caching system for the genomic region generation prevents redundant computations and speeds up repeated or similar requests. It works by generating a unique cache key for each specific set of parameters and storing the output path in a Redis cache using [`dogpile.cache`](https://dogpilecache.sqlalchemy.org/en/latest/index.html). This allows the pipeline to reuse previous outputs rather than recomputing them.
 The cache also handles locking to enable parallel execution of the genomic region generation task without accidentally downloading or computing the same files concurrently.
 
+A lock expires after `REDIS_CACHE_LOCK_TIMEOUT` seconds (2 hours by default, read by `backend/config.py`). Without a timeout, a worker killed during generation, e.g. by the OOM killer, would hold its lock forever and block every later run that needs the same files. Keep the timeout above the longest pipeline run: if a generation outlives its lock, the files are only generated twice, not corrupted, since each run writes to its own path.
+
 <!-- TODO: adjust this to new API once that is merged -->
 
 The genomic region generator gets executed when the `genomic_region_generation_forms` key in a pipeline's `formdata` payload contains the appropriate configuration.

@@ -1,7 +1,4 @@
-"""Configuration for different Celery tasks, which we want to run time based is done here.
-
-We use Celery Beat as a scheduler to run tasks in pre-configured intervals.
-"""
+"""Schedules the time-based Celery tasks, which Celery Beat runs in pre-configured intervals."""
 
 from celery import Celery, signature
 from celery.schedules import crontab
@@ -18,10 +15,13 @@ FIRST_OF_MONTH_CRON = crontab(minute=0, hour=1, day_of_month=1)
 
 @app.on_after_finalize.connect  # type: ignore
 def setup(sender: Celery, **kwargs):
-    """Setup tasks we want Celery beat to run regularly.
+    """Sets up the tasks that Celery Beat runs regularly.
 
     Arguments:
-        sender {Celery} -- The celery app which should run our tasks.
+        sender {celery.Celery} -- The Celery app that runs the tasks.
+
+    Keyword Arguments:
+        **kwargs {Any} -- Other arguments sent with the signal, unused.
     """
     sender.add_periodic_task(
         MIDNIGHT_CRON,

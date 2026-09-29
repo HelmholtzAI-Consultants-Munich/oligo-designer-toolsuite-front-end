@@ -25,7 +25,8 @@ interface ToolTipProps {
  * only the popover is rendered, under a generated id.
  *
  * @param id - id of the described field, not its `__description` id
- * @param tip - the description to show, or nothing to render no icon at all
+ * @param tip - the description to show; no icon is rendered without it
+ * @param presentational - render the trigger as a span instead of a button, e.g. inside an accordion header
  * @returns A React Component showing a description on hover, focus, or to a screen reader
  */
 export const ToolTip: React.FC<ToolTipProps> = ({

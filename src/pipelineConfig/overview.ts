@@ -1,5 +1,6 @@
 import { PIPELINE_CONFIG, type Pipeline } from "./config";
 
+/** One pipeline card on the overview. */
 export interface PipelineOverviewItem {
     title: string;
     description: string;
@@ -20,11 +21,18 @@ const displayOrder: Pipeline["name"][] = [
     "scrinshot",
 ];
 
+/**
+ * Gets a pipeline's position in `displayOrder`.
+ *
+ * @param name - the pipeline's name
+ * @returns The pipeline's index, or the list length if it is not listed
+ */
 const rank = (name: Pipeline["name"]) => {
     const index = displayOrder.indexOf(name);
     return index === -1 ? displayOrder.length : index;
 };
 
+/** All configured pipelines as overview cards, in display order. */
 export const pipelineOverview: PipelineOverviewItem[] = (
     Object.keys(PIPELINE_CONFIG) as Pipeline["name"][]
 )

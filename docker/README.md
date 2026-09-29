@@ -41,6 +41,22 @@ Note that since the `odt-tests` container is rarely used, it is not build by def
 
 Container builds do not pull the latest version of their base images by default. To update all containers to the latest available version, use `npm run docker:update`. This will pull the latest container images and rebuild the frontend and backend containers using these updated base images.
 
+#### Using an Unreleased ODT Version
+
+The `odt-server` and `odt-worker` images install the [Oligo Designer Toolsuite](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite) (ODT) release pinned in [`backend/pyproject.toml`](/backend/pyproject.toml). To try out an unreleased ODT version, set the build arg `ODT_REF` to a branch, tag or commit SHA of the ODT repository, e.g. in your `.env` (see [`.env.sample`](/.env.sample)):
+
+```text
+ODT_REF=main
+```
+
+Then rebuild both images, since the server builds the pipeline forms from ODT's models and the worker runs the pipelines:
+
+```bash
+docker compose build odt-server odt-worker
+```
+
+When `ODT_REF` is set, the build installs ODT from a clone of that ref instead of PyPI; leave it empty to use the pinned release. On GitHub, the repository variable `ODT_REF` does the same for the published images ([`publish_images.yml`](/.github/workflows/publish_images.yml)) and for the CI test runs.
+
 ### Building and Pushing Production Images
 
 > [!WARNING]

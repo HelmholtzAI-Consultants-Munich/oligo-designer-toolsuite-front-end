@@ -4,11 +4,12 @@ import ErrorAlert from "../components/ui/ErrorAlert";
 import NotFound from "./404";
 
 /**
- * Route-level error element. React Router routes every render error here, not just unmatched
- * URLs, so rendering the 404 page unconditionally reported crashes as missing pages.
+ * Route-level error page. React Router sends both unmatched URLs and render errors here, so
+ * always showing the 404 page would report crashes as missing pages.
  *
- * The thrown error is not shown: React Router already logs it to the console for developers,
- * and users get a sanitized message, as everywhere else (see `errorHandler.ts`).
+ * @remarks
+ * The thrown error is not shown. React Router already logs it to the console for developers, and
+ * users get a sanitized message, as everywhere else (see `errorHandler.ts`).
  *
  * @returns The 404 page for an unmatched URL, otherwise a page reporting that the page failed
  */

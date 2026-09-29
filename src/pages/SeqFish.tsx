@@ -2,6 +2,7 @@ import { memo } from "react";
 import PipelineForm from "../components/forms/PipelineForm";
 import { PIPELINE_CONFIG } from "../pipelineConfig/config";
 
+/** The seqFISH+ probe designer page. */
 const SeqFish: React.FC = memo(() => (
     <PipelineForm
         pipeline="seqfish"

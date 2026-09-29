@@ -3,7 +3,7 @@ import { memo } from "react";
 import CompactGrid from "./CompactGrid";
 
 /**
- * Layout for a field group that is already named by whatever holds it: just its fields.
+ * Renders only a field group's fields, with no heading, for groups whose parent already names them.
  *
  * @remarks
  * Applied in `uiSchemaFromJsonSchemaRecursive` to the options of a discriminated union whose

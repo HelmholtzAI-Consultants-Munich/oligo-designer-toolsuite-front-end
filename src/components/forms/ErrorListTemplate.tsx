@@ -16,7 +16,7 @@ const COLLAPSE_TRANSITION_MS = 350;
  * `x-collapsed` groups, which start closed and hide their fields with `display: none`.
  *
  * @param element - the element to reveal
- * @returns A boolean that is True if a collapse had to be opened
+ * @returns true if a collapse had to be opened
  */
 const openCollapsedAncestors = (element: HTMLElement): boolean => {
     let opened = false;

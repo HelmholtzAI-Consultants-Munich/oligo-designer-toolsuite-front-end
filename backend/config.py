@@ -1,13 +1,6 @@
-"""
-Flask and Celery configuration module.
+"""Flask defaults in Config (overridden by FLASK_* env vars) and Celery settings in CeleryConfig.
 
-Flask configuration defaults are defined in the Config class. Environment variables
-prefixed with FLASK_ override these defaults via app.config.from_prefixed_env().
-
-Celery configuration is managed separately in CeleryConfig since it uses its own
-configuration mechanism independent of Flask.
-
-See .env.sample for available configuration options.
+See .env.sample for the available options.
 """
 
 import os
@@ -97,11 +90,11 @@ class Config:
     REDIS_FILE_EXPIRATION_TIME = int(
         os.environ.get("REDIS_FILE_EXPIRATION_TIME", 3600 * 24 * 30)
     )  # in seconds (default: 30 days)
-    # How long a cache region may hold its generation lock. Without it the lock never expires,
-    # so a worker killed mid-generation (e.g. by the OOM killer) wedges that key for good and
-    # every later run asking for it blocks. Set above the longest pipeline run, since a
-    # generation outliving its lock is only repeated, never corrupted: each call writes to its
-    # own path and the cache replaces the entry.
+    # How long a cache region may hold its generation lock. Without a timeout the lock never
+    # expires, so a worker killed mid-generation (e.g. by the OOM killer) blocks that key forever
+    # and every later run asking for it waits. Keep it above the longest pipeline run. If a
+    # generation outlives its lock, it is only repeated, never corrupted: each call writes to
+    # its own path and the cache replaces the entry.
     REDIS_CACHE_LOCK_TIMEOUT = int(os.environ.get("REDIS_CACHE_LOCK_TIMEOUT", 3600 * 2))
     REDIS_FILE_CACHE_KEY_PREFIX = "file_cache:"  # Makes file cache keys enumerable via SCAN
     REDIS_QUEUE_LENGTH_KEY = "pipelines:queue_lengths"
@@ -111,10 +104,10 @@ class Config:
 
     @staticmethod
     def get_logging_config() -> dict:
-        """Get logging configuration dictionary for Flask application.
+        """Gets the logging configuration of the Flask application.
 
         Returns:
-            Dictionary compatible with logging.config.dictConfig()
+            dict -- The configuration for logging.config.dictConfig().
         """
         log_level = os.environ.get("LOG_LEVEL", "INFO")
         return {
@@ -144,12 +137,13 @@ class Config:
 
     @staticmethod
     def validate_oauth_config(app_config: dict):
-        """Validate that required OAuth configuration is present.
+        """Checks that the Helmholtz OAuth client ID and secret are set.
 
-        Args:
-            app_config: The Flask app.config dictionary (checked after env overrides are applied).
+        Arguments:
+            app_config {dict} -- The Flask app.config, after environment overrides are applied.
 
-        :raises ValueError: If required OAuth credentials are missing.
+        Raises:
+            ValueError: The client ID or secret is missing.
         """
         missing = []
         if not app_config.get("HELMHOLTZ_CLIENT_ID"):

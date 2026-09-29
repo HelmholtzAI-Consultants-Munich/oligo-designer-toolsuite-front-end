@@ -1,7 +1,6 @@
-"""
-This module defines utilities shared between the Flask server and the celery worker,
-therefore it intentionally imports only from the standard library so it can be
-shared without introducing cross-boundary dependencies.
+"""Helpers shared by the Flask server and the Celery worker.
+
+Imports only from the standard library, so it can be shared without cross-boundary dependencies.
 """
 
 import os

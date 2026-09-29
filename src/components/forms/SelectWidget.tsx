@@ -9,9 +9,9 @@ const { SelectWidget } = Widgets;
  * every other input gets from `WrappedBaseInputTemplate`, which a select does not go through.
  *
  * @remarks
- * Only a required enum needs this: an optional one (`anyOf` against null) is labelled by
- * `WrappedAnyOfField`, and a union's own option selector asks for its label to be hidden.
- * Not wrapped in `memo`: RJSF resolves widgets through `getWidget`, which rejects one.
+ * Only required enums need this. Optional enums (`anyOf` with null) are labelled by `WrappedAnyOfField`,
+ * and a union's own option selector asks for its label to be hidden. Not wrapped in `memo`, because RJSF
+ * resolves widgets through `getWidget`, which rejects memo components.
  *
  * @param props - WidgetProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-widgets-fields/#the-widgetprops-object})
  * @returns A React Component that is used to overwrite the theme's `SelectWidget`

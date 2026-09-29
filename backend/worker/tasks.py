@@ -97,19 +97,20 @@ def _resolve_path_under_root(path_value: Any, root: Path) -> Path | None:
 
 
 def _delete_file_or_directory_if_under_root(path_value: Any, root: Path, is_dir: bool) -> tuple[bool, bool]:
-    """Tries to delete a file inside of a root directory.
-
-    `can_delete_record` is True when the DB record is safe to remove: either the path
-    is already gone or was never valid. False when the path points to something that
-    isn't a file (e.g. a directory), so the record must be kept to avoid data loss.
+    """Deletes a file or directory if it is located inside a root directory.
 
     Arguments:
-        path_value {Any} -- potential filepath that should be deleted.
-        root {pathlib.Path} -- The root directory path, which should be a top directory of `path_value`.
-        is_dir {bool} -- Whether the path that should be removed is a directory.
+        path_value {Any} -- The stored path of the file or directory.
+        root {pathlib.Path} -- The root directory that must contain `path_value`.
+        is_dir {bool} -- Whether the path should be a directory.
+
+    Notes:
+        The DB record can be deleted when the path is already gone or was never valid. It must be
+        kept when the path points to something of the wrong type (e.g. a directory instead of a
+        file), to avoid data loss.
 
     Returns:
-        tuple[bool, bool] -- (Record can be deleted, File or Directory was deleted).
+        tuple[bool, bool] -- Whether the DB record can be deleted, and whether the path was deleted.
     """
     file_or_directory_path = _resolve_path_under_root(path_value, root)
     if file_or_directory_path is None:
@@ -131,31 +132,31 @@ def _delete_file_or_directory_if_under_root(path_value: Any, root: Path, is_dir:
 
 
 def _delete_directory_if_under_root(path_value: Any, root: Path) -> tuple[bool, bool]:
-    """Deletes a directory if it is located inside a specific root directory.
+    """Deletes a directory if it is located inside a root directory.
 
-    See `_delete_file_or_directory_if_under_root` for further details.
+    See `_delete_file_or_directory_if_under_root` for details.
 
     Arguments:
-        path_value {Any} -- The path to the directory that should be deleted.
-        root {Path} -- The root directory path, which should be a top directory of `path_value`.
+        path_value {Any} -- The stored path of the directory.
+        root {pathlib.Path} -- The root directory that must contain `path_value`.
 
     Returns:
-        tuple[bool, bool] -- (Record can be deleted, Directory was deleted),
+        tuple[bool, bool] -- Whether the DB record can be deleted, and whether the directory was deleted.
     """
     return _delete_file_or_directory_if_under_root(path_value, root, True)
 
 
 def _delete_file_if_under_root(path_value: Any, root: Path) -> tuple[bool, bool]:
-    """Deletes a file if it is located inside a specific root directory.
+    """Deletes a file if it is located inside a root directory.
 
-    See `_delete_file_or_directory_if_under_root` for further details.
+    See `_delete_file_or_directory_if_under_root` for details.
 
     Arguments:
-        path_value {Any} -- The path to the file that should be deleted.
-        root {Path} -- The root directory path, which should be a top directory of `path_value`.
+        path_value {Any} -- The stored path of the file.
+        root {pathlib.Path} -- The root directory that must contain `path_value`.
 
     Returns:
-        tuple[bool, bool] -- (Record can be deleted, File was deleted),
+        tuple[bool, bool] -- Whether the DB record can be deleted, and whether the file was deleted.
     """
     return _delete_file_or_directory_if_under_root(path_value, root, False)
 
@@ -550,14 +551,14 @@ def cleanup_anonymous_data() -> dict[str, int]:
 
 
 def _changed_at(path: Path) -> float:
-    """Returns when a file or directory, including its metadata, was last changed.
-
-    Notes:
-        The modification time cannot be used, since downloads set it to the remote's
-        `Last-Modified` date, so a just downloaded file would look old.
+    """Gets when a file or directory, including its metadata, was last changed.
 
     Arguments:
-        path {pathlib.Path} -- The file or directory to check, symlinks are not followed.
+        path {pathlib.Path} -- The file or directory, symlinks are not followed.
+
+    Notes:
+        The modification time is not used, since downloads set it to the remote `Last-Modified`
+        date, so a just downloaded file would look old.
 
     Returns:
         float -- The timestamp of the last change.
@@ -566,15 +567,18 @@ def _changed_at(path: Path) -> float:
 
 
 def _delete_empty_directory_if_under_root(path: Path, root: Path) -> bool:
-    """Deletes an empty directory if it is located inside a specific root directory.
-
-    Notes:
-        Content created in the directory in the meantime makes the deletion fail
-        instead of being deleted along with the directory.
+    """Deletes an empty directory if it is located inside a root directory.
 
     Arguments:
-        path {pathlib.Path} -- The path to the directory that should be deleted.
-        root {pathlib.Path} -- The root directory path, which should be a top directory of `path`.
+        path {pathlib.Path} -- The directory to delete.
+        root {pathlib.Path} -- The root directory that must contain `path`.
+
+    Notes:
+        Content created in the directory in the meantime makes the deletion fail, instead of
+        being deleted along with the directory.
+
+    Raises:
+        OSError: The directory cannot be removed for a reason other than being missing or not empty.
 
     Returns:
         bool -- Whether the directory was deleted.
@@ -601,15 +605,7 @@ def _cleanup_cache_entry(
     cutoff: float,
     result: dict[str, int],
 ) -> None:
-    """Recursively deletes a cached entry and its content if the file cache dropped it.
-
-    Notes:
-        Directories are descended into instead of being removed as a whole, so that a
-        directory still holding relevant content survives. A directory is only removed
-        once nothing is left in it.
-
-        Entries that cannot be accessed are logged and counted as failed, so that the
-        remaining entries still get cleaned up.
+    """Recursively deletes a cache entry and its content if the file cache no longer references it.
 
     Arguments:
         path {pathlib.Path} -- The file or directory to clean up.
@@ -617,6 +613,13 @@ def _cleanup_cache_entry(
         referenced {set[pathlib.Path]} -- The paths the file cache still references.
         cutoff {float} -- Entries changed after this timestamp are kept.
         result {dict[str, int]} -- Deletion counters, updated in place.
+
+    Notes:
+        Directories are descended into instead of being removed as a whole, so a directory that
+        still holds referenced content survives. A directory is only removed once it is empty.
+
+        Entries that cannot be accessed are logged and counted as failed, so the remaining
+        entries still get cleaned up.
     """
     try:
         resolved = path.resolve()
@@ -637,9 +640,9 @@ def _cleanup_cache_entry(
             if any(path.iterdir()):
                 return
 
-        # Keep entries changed within the grace period (`_changed_at(path) > cutoff`), they may
-        # still be written before getting their cache key. Directories emptied above
-        # (`had_content`) skip this check, since deleting their content just changed them.
+        # Keep entries changed within the grace period, they may still be written before getting
+        # their cache key. Directories emptied above skip this check, since deleting their
+        # content just changed them.
         if not had_content and _changed_at(path) > cutoff:
             return
 
@@ -664,7 +667,7 @@ def cleanup_cache_dirs() -> dict[str, int]:
         until this task removes it, see backend.cache.FileCacheProxy.
 
     Returns:
-        dict[str, int] -- The number of referenced paths, of deleted files and directories and of failed entries.
+        dict[str, int] -- Counts of referenced paths, deleted files, deleted directories and failures.
     """
     cache_root = get_cache_root()
     result = {"referenced": 0, "deleted_files": 0, "deleted_dirs": 0, "failed": 0}

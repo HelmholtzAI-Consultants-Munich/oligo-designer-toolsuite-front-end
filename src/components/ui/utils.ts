@@ -48,6 +48,12 @@ export const runStatusDisplay = {
     },
 };
 
+/**
+ * Gets the short label shown for a run status, e.g. "Running".
+ *
+ * @param status - the run's state
+ * @returns The status label
+ */
 export const getRunStatusLabel = (status: RunState) =>
     runStatusDisplay[status].label;
 

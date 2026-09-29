@@ -9,10 +9,17 @@ export type QuickSettingsContainers = Record<
     HTMLElement | null
 >;
 
+/** Gives quick-setting fields the Quick Settings panel's container elements. */
 export const QuickSettingsContext = createContext<QuickSettingsContainers>({
     required: null,
     general: null,
 });
 
+/**
+ * Gets the element that fields of a Quick Settings group portal into.
+ *
+ * @param group - the Quick Settings group
+ * @returns The container element, or null before the panel mounts
+ */
 export const useQuickSettingsContainer = (group: QuickSettingsGroup) =>
     useContext(QuickSettingsContext)[group];

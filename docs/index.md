@@ -13,7 +13,7 @@ This site provides comprehensive documentation for the Oligo Designer Toolsuite 
 The majority of this documentation is designed for **users of the web application**. Here you will find:
 
 - **Getting Started** guides for new users
-- **Pipeline Documentation** with detailed descriptions of each supported pipeline (MERFISH, SeqFISH, Scrinshot, OligoSeq, and Genomic Region Generator)
+- **Pipeline Documentation** with detailed descriptions of each supported pipeline (MERFISH, SeqFISH, Scrinshot, OligoSeq, HCR, Cycle HCR, and Genomic Region Generator)
 - **User Guides** covering authentication, run management, and artifact handling
 - **Usage Instructions** explaining how to interact with the system and run oligo design experiments
 

@@ -5,6 +5,11 @@ import Hero from "../components/ui/Hero";
 import { Vertical } from "../components/ui/Alignment";
 import CitationCard from "../components/ui/CitationCard";
 
+/**
+ * The landing page with the hero, feature highlights and citation.
+ *
+ * @returns The home page
+ */
 export default function Home() {
     return (
         <Page title="Oligo Designer Toolsuite" metaTitle="ODT Cloud" hideHeader>

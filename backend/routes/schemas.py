@@ -1,7 +1,7 @@
 """Serves the JSON Schemas the front-end builds its pipeline forms from.
 
-The schemas are generated from ODT's Pydantic models (see `backend.worker.models`) rather than read
-from disk, so a new ODT version changes the forms without a checked-in file to regenerate first.
+The schemas are generated from ODT's Pydantic models (see `backend.worker.models`), not read from
+disk, so a new ODT version changes the forms without a checked-in file to regenerate first.
 """
 
 import json
@@ -20,7 +20,14 @@ _SERIALIZED: dict[str, tuple[bytes, str]] = {}
 
 
 def _serialized_schema(pipeline_name: str) -> tuple[bytes, str]:
-    """Returns the pipeline's schema as a response body and its ETag, serializing it once."""
+    """Gets the pipeline's schema as a response body and its ETag, serializing it only once.
+
+    Arguments:
+        pipeline_name {str} -- The name of a pipeline in FRONT_END_SCHEMAS.
+
+    Returns:
+        tuple[bytes, str] -- The JSON body and its ETag.
+    """
     if pipeline_name not in _SERIALIZED:
         body = json.dumps(build_pipeline_schema(pipeline_name), separators=(",", ":")).encode()
         _SERIALIZED[pipeline_name] = (body, sha256(body).hexdigest())
@@ -39,7 +46,17 @@ def warm_pipeline_schemas() -> None:
 
 @schemas_bp.route("/api/pipelines/<pipeline_name>/schema", methods=["GET"])
 def pipeline_schema(pipeline_name: str) -> Response:
-    """Returns the JSON Schema the pipeline's form is built from, or 404 for an unknown name."""
+    """Gets the JSON Schema that the pipeline's form is built from.
+
+    Arguments:
+        pipeline_name {str} -- The name of the pipeline, from the URL.
+
+    Raises:
+        werkzeug.exceptions.NotFound: The pipeline does not exist.
+
+    Returns:
+        flask.Response -- The JSON Schema, or an empty 304 response if the ETag matches.
+    """
     if pipeline_name not in FRONT_END_SCHEMAS:
         abort(HTTPStatus.NOT_FOUND, description=f'Pipeline "{pipeline_name}" does not exist')
 

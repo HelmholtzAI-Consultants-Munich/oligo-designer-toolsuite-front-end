@@ -18,7 +18,10 @@ type CompactGridProps = Pick<
  * object layouts that hold a plain grid of fields. Not memoized: RJSF rebuilds `properties` on
  * every render, so a shallow prop comparison would never hit.
  *
- * @param props - the group's `schema`, `uiSchema` and `properties`, plus classes for the grid's gaps
+ * @param schema - the group's JSON Schema
+ * @param uiSchema - the group's UiSchema
+ * @param properties - the group's rendered fields
+ * @param className - extra classes, e.g. for the grid's row gap
  * @returns A React Component holding the group's fields
  */
 function CompactGrid({

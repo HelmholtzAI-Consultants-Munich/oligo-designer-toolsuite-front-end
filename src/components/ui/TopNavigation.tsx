@@ -4,6 +4,11 @@ import { Image, Nav, Navbar } from "react-bootstrap";
 import { Horizontal } from "./Alignment";
 import UserDropdown from "./UserDropdown";
 
+/**
+ * The top navigation bar with the logo, page links and user menu. It collapses on small screens.
+ *
+ * @returns The navigation bar
+ */
 export default function TopNavigation() {
     const location = useLocation();
     const navigate = useNavigate();

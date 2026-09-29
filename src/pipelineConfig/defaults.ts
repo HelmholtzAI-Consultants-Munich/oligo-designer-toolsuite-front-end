@@ -5,14 +5,14 @@ import { findSchemaDefinition, type RJSFSchema } from "@rjsf/utils";
  * field's default is a model instance (e.g. `Tm_parameters: TmParameters = TmParameters(dnac2=0)`).
  *
  * @remarks
- * Such a field carries two defaults: the instance's override and the referenced model's own.
- * `nestedDefaultsPrecedence: "ancestorWins"` should make the override win, but RJSF gates that
- * on `defaults && ...` (`computeDefaults` in @rjsf/utils), so an override of `0`, `false` or
- * `""` reads as "no override" and the model's own default wins instead - `dnac2` renders as 25
- * rather than 0. Seeding these as form data stops RJSF computing a default for them at all.
+ * Such a field has two defaults: the instance's override and the referenced model's own.
+ * `nestedDefaultsPrecedence: "ancestorWins"` should make the override win, but RJSF checks it with
+ * `defaults && ...` (`computeDefaults` in @rjsf/utils). So an override of `0`, `false` or `""` counts as
+ * "no override" and the model's own default wins: `dnac2` shows 25 rather than 0. Seeding these values
+ * as form data stops RJSF from computing a default for them at all.
  *
- * Only plain properties are walked, not `oneOf`/`anyOf` branches: seeding a branch's fields
- * would bias which branch RJSF matches, and so could silently enable an optional filter.
+ * Only plain properties are walked, not `oneOf`/`anyOf` branches: seeding a branch's fields would change
+ * which branch RJSF matches, and so could silently turn on an optional filter.
  *
  * @param schema - the schema to walk
  * @param rootSchema - the full pipeline schema, used to resolve `$ref`s
