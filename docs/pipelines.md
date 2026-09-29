@@ -14,17 +14,23 @@ All pipelines share a consistent workflow: **prepare inputs → configure parame
 
 ## Available Pipelines
 
-- **SCRINSHOT** — _src/pages/scrinshot.tsx_  
+- **SCRINSHOT** — _src/pages/Scrinshot.tsx_  
   Designs padlock probes with gene-specific 5' and 3' arms that circularize upon hybridization to detect and quantify RNA transcripts at single-cell resolution. These probes enable highly multiplexed and spatially resolved gene expression analysis in tissue samples.
 
-- **MERFISH** — _src/pages/merfish.tsx_  
+- **MERFISH** — _src/pages/Merfish.tsx_  
   Designs encoding probes with unique barcodes that enable simultaneous imaging and identification of hundreds of different transcripts within a single sample. This highly multiplexed approach provides detailed, spatially resolved gene expression information at the single-cell level.
 
-- **SeqFISH+** — _src/pages/seqfish.tsx_  
+- **SeqFISH+** — _src/pages/SeqFish.tsx_  
   Designs probes for sequential fluorescence in situ hybridization, enabling multiple rounds of hybridization and imaging to visualize and quantify hundreds of RNA targets in a single sample. This technique preserves spatial context while providing high-throughput and single-cell resolution.
 
-- **Oligo-Seq** — _src/pages/oligoseq.tsx_  
+- **Oligo-Seq** — _src/pages/OligoSeq.tsx_  
   Designs oligo hybridization probes optimized for probe-based targeted sequencing to measure RNA expression. These probes are specifically tailored for next-generation sequencing detection methods.
+
+- **HCR** — _src/pages/Hcr.tsx_  
+  Designs pairs of split-initiator probes for hybridization chain reaction. A fluorescent signal is amplified only where both probes of a pair bind next to each other on the transcript.
+
+- **Cycle HCR** — _src/pages/CycleHcr.tsx_  
+  Designs primary probes with readout barcodes for cyclic hybridization chain reaction. Readout probes and HCR hairpins are exchanged over several imaging cycles to detect many RNA targets in one sample.
 
 ---
 
@@ -35,12 +41,34 @@ Each pipeline page provides:
 - **FASTA input**
   - Generate directly from genomic databases (**NCBI** / **Ensembl**)
   - Or upload existing FASTA files from your computer
-- **Multiple data sources** per pipeline (e.g., target probes, reference databases, primers)
-- **Advanced parameter controls** for probe length, GC content, melting temperature, secondary structure, homopolymers, and more
-- **Developer settings** for fine-grained control over BLASTN/Bowtie parameters and thermodynamic calculations
+- **Required Parameters** — the target genes and the target and reference genomes, shown at the top of the first tab
+- **Quick Settings** — the most important parameters of each tab, shown at the top of that tab
+- **Tabs and sections** — one tab per probe type (e.g. target probes, readout probes, primers), with the remaining parameters grouped into sections for probe length, GC content, melting temperature, secondary structure, specificity filters, and more
+- **Optional filters** — a checkbox turns a filter on and shows its parameters; some large parameter groups start collapsed to save space
+- **Codebook and probe tables** — MERFISH, SeqFISH+, HCR and Cycle HCR let you load or generate these, see [Codebooks and Probe Tables](#codebooks-and-probe-tables)
 - **Job submission**
   - Generates a unique **Run ID** via the helper API
   - Sends all inputs and settings to the backend for processing
+
+---
+
+## Codebooks and Probe Tables
+
+MERFISH, SeqFISH+, HCR and Cycle HCR assign barcodes to genes with a codebook and attach readout or initiator sequences from a probe table. For each of these, a dropdown lets you choose the source:
+
+- **Generate** — the pipeline creates the table from your parameters.
+- **Load** — you upload your own file (CSV or TSV). The field's tooltip describes the required columns.
+
+| Pipeline  | Codebook         | Probe table                           |
+| --------- | ---------------- | ------------------------------------- |
+| MERFISH   | Generate or Load | Readout probe table: Generate or Load |
+| SeqFISH+  | Generate or Load | Readout probe table: Generate or Load |
+| HCR       | Load             | Initiator table: Load                 |
+| Cycle HCR | Generate or Load | Readout probe table: Load             |
+
+HCR offers **Generate** in the form, but the current ODT version cannot generate these tables yet, so the run fails unless you choose **Load**.
+
+> **Note:** Settings saved with **Export Settings** on the run detail page do not contain uploaded files. After you import them with **Import Settings**, upload the files again.
 
 ---
 
@@ -86,10 +114,10 @@ AGTTGACAGACCCCAGATTAAAGTGTGTCGCGCAACAC
 
 1. **Select and prepare inputs**  
    Choose between generating FASTA files from NCBI/Ensembl or uploading them manually.  
-   Some pipelines require multiple FASTA groups (e.g., MERFISH and SeqFISH require target, reference, and readout probe databases).
+   Every pipeline needs two genomes in its **Required Parameters**: the **Target Genome** (`required_parameters.target_genome`), from which the probe sequences are generated, and the **Reference Genome** (`required_parameters.reference_genome`), which all specificity filters of the run check the probes against.
 
 2. **Configure parameters**  
-   Adjust basic, advanced, and developer-level settings to fit your experimental requirements.
+   Set the quick settings of each tab, then adjust the parameters in the tabs and sections to fit your experimental requirements.
 
 3. **Submit**  
    On submission, the system:
@@ -109,4 +137,6 @@ For detailed parameter explanations and backend processing steps, see the dedica
 - [Scrinshot](scrinshot.md)
 - [SeqFISH](seqfish.md)
 - [OligoSeq](oligoseq.md)
+- [HCR](hcr.md)
+- [Cycle HCR](cyclehcr.md)
 - [Genomic Region Generator](genomic-region-generator.md)

@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_cache_root() -> Path:
-    """Get the root directory of the file cache.
+    """Gets the root directory of the file cache.
 
     Returns:
         pathlib.Path -- The path to the file cache root directory.
@@ -27,35 +27,31 @@ def get_cache_root() -> Path:
 class FileCacheProxy(ProxyBackend):
     """A dogpile.cache ProxyBackend that caches files and directories.
 
-    Notes:
-        Cached values must be pathlib.Path objects pointing to existing files or
-        directories. The cache does not know how they were created but handles
-        deletion upon eviction and replacement.
+    Cached values must be pathlib.Path objects pointing to existing files or directories.
+    The cache does not know how they were created, but it deletes them on eviction and
+    replacement: a file or directory is deleted when its key is deleted or the same key
+    is set to a new path.
 
-        Files and directories get deleted if they are explicitly removed from the
-        cache or the same key is associated with a new file or directory.
+    Reading a value renews its expiration, so cached files and directories expire after
+    not being used for the expiration time configured on the cache backend.
 
-        Cached files and directories expire after not being used for the expiration
-        time configured on the cache backend, since retrieving a value renews its expiration.
+    Files of invalidated or expired keys are not deleted here. The periodic
+    backend.worker.tasks.cleanup_cache_dirs task removes them by comparing the files on
+    disk with the paths returned by get_cached_file_paths.
 
-        If a key is invalidated or expires, the associated file or directory will
-        not get deleted. This is handled externally by the periodic
-        backend.worker.tasks.cleanup_cache_dirs task, which compares the files on
-        disk against the paths returned by get_cached_file_paths.
-
-        Not all cache backends provided by dogpile.cache are compatible with this Proxy
-        as they may serialize values.
+    Not all dogpile.cache backends work with this proxy: it reads and writes serialized
+    values, so backends that do not serialize values are not supported.
     """
 
     def _get_path_from_value(self, value: bytes) -> Path:
         """Unpacks and deserializes the raw cached value into a pathlib.Path.
 
-        Notes:
-            This was adapted from dogpile.cache.CacheRegion._parse_serialized_from_backend,
-            see https://github.com/sqlalchemy/dogpile.cache/blob/39e3c57180ce9b4f27a256ffdf31f063d54fb685/dogpile/cache/region.py#L1266.
-
         Arguments:
             value {bytes} -- The raw cached value, must represent a pathlib.Path.
+
+        Notes:
+            Adapted from dogpile.cache.CacheRegion._parse_serialized_from_backend, see
+            https://github.com/sqlalchemy/dogpile.cache/blob/39e3c57180ce9b4f27a256ffdf31f063d54fb685/dogpile/cache/region.py#L1266.
 
         Raises:
             AssertionError: The underlying cache backend does not provide a deserializer.
@@ -84,19 +80,17 @@ class FileCacheProxy(ProxyBackend):
         raise NotImplementedError
 
     def get_serialized(self, key: str) -> SerializedReturnType:
-        """Retrieves the associated file or directory path and renews its expiration.
-
-        Notes:
-            If the cache backend contains a path to a file or directory that does
-            not exist when this function is called, the value gets deleted from the
-            cache and the function returns NO_VALUE, treating it like a cache miss.
-
-            Retrieving a value renews its expiration, so that the cached file or
-            directory expires after being unused for the configured expiration time
-            instead of a fixed time after it was cached.
+        """Gets the associated file or directory path and renews its expiration.
 
         Arguments:
             key {str} -- The cache key to retrieve.
+
+        Notes:
+            If the stored path no longer exists on disk, the key is deleted from the cache and
+            NO_VALUE is returned, like a cache miss.
+
+            Reading a value renews its expiration, so an entry expires after being unused for the
+            configured time instead of a fixed time after it was cached.
 
         Returns:
             SerializedReturnType -- The cached value representing a pathlib.Path or NO_VALUE.
@@ -133,7 +127,7 @@ class FileCacheProxy(ProxyBackend):
         """Deletes the file or directory, if it exists.
 
         Arguments:
-            path {Path} -- The path to the file or directory to delete.
+            path {pathlib.Path} -- The file or directory to delete.
         """
         if path.exists():
             if path.is_dir():
@@ -146,12 +140,11 @@ class FileCacheProxy(ProxyBackend):
 
         Arguments:
             key {str} -- The cache key to set.
-            value {bytes} -- The value to associate with the key, must represent a pathlib.Path pointing to an existing file or directory.
+            value {bytes} -- The value to store, must represent a pathlib.Path pointing to an
+                existing file or directory.
 
         Notes:
-            The cached return value needs to be a pathlib.Path pointing to an
-            existing file or directory. If a different path is already associated
-            with the passed key, it gets deleted.
+            If a different path is already stored under the key, that file or directory is deleted.
 
         Raises:
             AssertionError: The passed value does not represent a pathlib.Path.
@@ -177,8 +170,8 @@ class FileCacheProxy(ProxyBackend):
             key {str} -- The cache key to delete.
 
         Notes:
-            This expects the value to be serialized and is thus incompatible
-            with backends that do not serialize cached values.
+            Expects the backend to store serialized values, so it does not work with backends
+            that do not serialize them.
         """
         if value := self.proxied.get_serialized(key):
             path = self._get_path_from_value(value)
@@ -207,13 +200,12 @@ Usage:
 def file_cache_key_mangler(key: str) -> str:
     """Hashes a file cache key and prefixes it, so file cache keys stay enumerable.
 
-    Notes:
-        The prefix separates the file cache keys from other keys in the same Redis
-        instance (generic cache, Celery), so get_cached_file_paths can collect them
-        with a SCAN.
-
     Arguments:
         key {str} -- The unmangled cache key.
+
+    Notes:
+        The prefix separates file cache keys from other keys in the same Redis instance
+        (generic cache, Celery), so get_cached_file_paths can collect them with a SCAN.
 
     Returns:
         str -- The prefixed and hashed cache key.

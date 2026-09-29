@@ -24,6 +24,7 @@ This document explains the test strategy for this software. There are **three** 
 - Status codes, JSON schema, and error handling of **all API endpoints**.
 - Auth/session flows (login, logout, protected routes).
 - Validation of complex pipeline payloads (e.g., Scrinshot, MERFISH, SeqFISH).
+- The form schema endpoint `GET /api/pipelines/<pipeline_name>/schema` (`backend/tests/test_schema_routes.py`): every pipeline in `FRONT_END_SCHEMAS` gets a schema without `general` and without developer docstrings, an unknown name returns `404`, and an unchanged schema returns `304`.
 - Pipeline submission/scheduling logic (mock long-running jobs & I/O).
 - DB interactions (mock MongoDB in unit tests).
 
@@ -92,6 +93,7 @@ npm run test:watch
 - Tests use **Vitest** as the test runner with **React Testing Library** for component testing.
 - Tests run in a `jsdom` environment to simulate browser behavior.
 - Test files should be named `*.test.tsx` or `*.test.ts` and placed alongside the components they test.
+- `src/tests/PipelineForm.test.tsx` checks that a pipeline form fetches its schema, renders once it arrives, and reports a failed fetch. Vitest cannot reach a backend, so the request is answered with the small hand-written schema in `src/tests/fixtures/pipeline.schema.json`. The tests cover fetching, not the fields of any real pipeline.
 
 ---
 

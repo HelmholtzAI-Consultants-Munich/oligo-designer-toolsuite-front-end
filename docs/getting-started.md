@@ -32,14 +32,18 @@ The application provides several specialized probe design pipelines:
 - **SeqFISH+ Probe Designer** — Designs probes for sequential fluorescence in situ hybridization
 - **Scrinshot Probe Designer** — Designs padlock probes for single-cell RNA detection
 - **Oligo-Seq Probe Designer** — Designs oligo hybridization probes for targeted sequencing
+- **HCR Probe Designer** — Designs split-initiator probe pairs for signal-amplified RNA imaging
+- **Cycle HCR Probe Designer** — Designs primary probes with readout barcodes for multiplexed HCR imaging over several cycles
 - **Genomic Region Generator** — Extracts specific genomic regions from FASTA and GTF files
 
 ### Basic Workflow
 
-1. **Navigate to a Pipeline** — Select the pipeline you want to use from the navigation menu
+1. **Navigate to a Pipeline** — On the home page, click **Start Designing** to see all pipelines, or pick one from the **Pipelines** list in the sidebar
 2. **Configure Parameters** — Fill in the required form fields with your experimental parameters
-3. **Submit** — Click the submit button to start the pipeline execution
+3. **Submit** — Click **Run Pipeline** to start the pipeline execution
 4. **Track Progress** — Monitor your run's status and view results when complete
+
+The top navigation bar links to **Home**, **FAQ**, **Contact** and the ODT **Docs**. The person icon on its right opens the sign-in page, or the user menu once you are signed in. The sidebar also lists your **Recent Runs**.
 
 Each pipeline has its own detailed documentation with specific configuration options and requirements. See the [Pipelines](pipelines.md) section for an overview, or navigate to individual pipeline guides for detailed instructions.
 
@@ -72,7 +76,7 @@ No local installation is required—everything runs through your web browser.
 
 ## Citation
 
-If you use this platform for your research, please cite the main [Oligo Designer Toolsuite](https://doi.org/10.5281/zenodo.7823048).
+If you use this platform for your research, please cite the main [Oligo Designer Toolsuite](https://doi.org/10.5281/zenodo.7823048). The **Cite Oligo Designer Toolsuite** card on the home page links to the same publication.
 
 ---
 

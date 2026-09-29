@@ -11,7 +11,9 @@ interface FieldRowLabelProps {
 /**
  * A field's label in the left column of a `field-row`, with its description as a tooltip beside it.
  *
- * @param props - the field's input id, label and description
+ * @param id - id of the field's input
+ * @param label - the field's label
+ * @param description - the field's description, shown as a tooltip
  * @returns A React Component that labels a single field
  */
 const FieldRowLabel = memo(function FieldRowLabel({

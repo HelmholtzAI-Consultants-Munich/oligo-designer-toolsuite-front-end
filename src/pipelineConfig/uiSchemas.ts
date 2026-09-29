@@ -13,7 +13,13 @@ import {
     snakeCaseToTitleCase,
 } from "../components/forms/utils";
 
-/** Resolves a `$ref` against the full schema, returning the node unchanged if it has none. */
+/**
+ * Resolves a `$ref` against the full schema.
+ *
+ * @param schema - the schema node to resolve
+ * @param baseSchema - the full schema holding the definitions
+ * @returns The referenced schema, or the node unchanged if it has no `$ref` or the lookup fails
+ */
 const resolveSchema = (
     schema: RJSFSchema,
     baseSchema: RJSFSchema
@@ -32,6 +38,10 @@ const resolveSchema = (
  * Determines whether a field's schema is a "scalar" (not an object or array), following
  * $ref and oneOf/anyOf so that e.g. nullable scalar fields (`anyOf: [{type: "integer"}, {type: "null"}]`)
  * are still recognized as scalar.
+ *
+ * @param schema - the field's schema
+ * @param baseSchema - the full schema holding the definitions
+ * @returns true if the field is a scalar
  */
 const isScalarSchema = (
     schema: RJSFSchema,

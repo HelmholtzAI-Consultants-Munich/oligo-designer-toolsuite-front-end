@@ -12,7 +12,10 @@ interface GroupHeadingProps {
 /**
  * A field group's name, with its description as a tooltip beside it.
  *
- * @param props - the group's `fieldPathId.$id` (if RJSF provides one), title, description and extra classes
+ * @param id - the group's `fieldPathId.$id`, if RJSF provides one
+ * @param title - the group's name
+ * @param description - the group's description, shown as a tooltip
+ * @param className - extra classes
  * @returns A React Component that heads a field group, or null if there is nothing to show
  */
 const GroupHeading = memo(function GroupHeading({

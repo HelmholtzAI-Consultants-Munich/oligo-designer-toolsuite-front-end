@@ -38,7 +38,7 @@ class GenomicRegionGeneratorRunner:
         Sets the logger and ensures that the caching directory exists.
 
         Arguments:
-            logger {Logger} -- The logger that should be used by the GenomicRegionGeneratorRunner.
+            logger {logging.Logger} -- The logger that should be used by the GenomicRegionGeneratorRunner.
         """
         self.logger = logger
 

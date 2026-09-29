@@ -69,10 +69,13 @@ class GenomicRegionsFile:
         return list(genes)
 
     def _load_probes_and_scores(self):
-        """Loads probes and scores from probes yaml file, matches probes to regions, and fills gaps for exon-exon junction probes.
+        """Loads probes and scores from the probes YAML file.
+
+        Matches the probes to regions and fills gaps for exon-exon junction probes.
 
         Returns:
-            tuple[dict[str, dict[str, list[dict]]], dict[str, dict]]: Two dictionaries, one containing probes grouped by gene and oligoset, and another containing scores for each oligoset.
+            tuple[dict[str, dict[str, list[dict]]], dict[str, dict]] -- The probes grouped by gene and
+                oligoset, and the scores of each oligoset.
         """
         probes: defaultdict[Any, dict] = defaultdict(lambda: defaultdict(list))
         scores: defaultdict[Any, dict] = defaultdict(dict)
@@ -104,13 +107,16 @@ class GenomicRegionsFile:
         return dict(probes), dict(scores)
 
     def _generate_probes_from_probe_info(self, probe_info):
-        """Generates probe entries from probe info, handling multiple locations for the same probe sequence and filling gaps for exon-exon junction probes.
+        """Generates probe entries from the probe info.
 
-        Args:
-            probe_info (dict): Dictionary containing probe information.
+        A probe sequence found at several locations gets one entry per location, and gaps are
+        filled for exon-exon junction probes.
+
+        Arguments:
+            probe_info {dict} -- The info of one probe from the probes YAML file, modified in place.
 
         Returns:
-            list[dict]: List of generated probe entries.
+            list[dict] -- The probe entries.
         """
         # cast entries to lists of lists if they are not already
         for field in probe_info:

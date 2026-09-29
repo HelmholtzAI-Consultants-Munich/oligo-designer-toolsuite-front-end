@@ -14,7 +14,7 @@ _A lightweight, user-friendly interface for custom oligo design pipelines_
 ---
 
 This repository contains the **web application** for the [Oligo Designer Toolsuite](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite) (ODT for short):  
-A modular, open-source platform for running custom oligo design pipelines (such as SeqFISH+, Scrinshot, Oligo-Seq, and MERFISH) on your own server or in the cloud.
+A modular, open-source platform for running custom oligo design pipelines (such as SeqFISH+, Scrinshot, Oligo-Seq, MERFISH, HCR, and Cycle HCR) on your own server or in the cloud.
 
 Deploying this frontend allows **multiple users to access, configure, and run oligo design pipelines via a browser**. The frontend talks to the backend REST API (Python Flask) where all core logic and computation happens.
 
@@ -26,10 +26,11 @@ Deploying this frontend allows **multiple users to access, configure, and run ol
 - Visualizes pipeline progress and results
 - Integrates seamlessly with ODT to provide a full-featured design platform for:
   - Oligo-Seq
-  - _SeqFISH+ (in development)_
-  - _Scrinshot (in development)_
-  - _MERFISH (in development)_
-  - _CycleHCR Probe Designer (in development)_
+  - SeqFISH+
+  - Scrinshot
+  - MERFISH
+  - HCR
+  - Cycle HCR
 
 ---
 
@@ -88,10 +89,11 @@ The following pipelines are available through the web interface:
 
 - **Oligo-Seq Probe Designer**
 - **Genomic Region Generator** (as a submodule)
-- _SeqFISH+ Probe Designer (in development)_
-- _Scrinshot Probe Designer (in development)_
-- _MERFISH Probe Designer (in development)_
-- _CycleHCR Probe Designer (in development)_
+- **SeqFISH+ Probe Designer**
+- **Scrinshot Probe Designer**
+- **MERFISH Probe Designer**
+- **HCR Probe Designer**
+- **Cycle HCR Probe Designer**
 
 See the [Oligo Designer Toolsuite](https://oligo-designer-toolsuite.readthedocs.io/en/latest/) for details.
 
@@ -108,7 +110,7 @@ See the [Oligo Designer Toolsuite](https://oligo-designer-toolsuite.readthedocs.
   - Conda for environment setup
   - MongoDB as database
 
-For a more detailed description of the architecture see our [Architecture Documentation](ARCHITECTURE.md).
+For a more detailed description of the architecture see our [Architecture Documentation](dev-docs/ARCHITECTURE.md).
 
 ## License
 

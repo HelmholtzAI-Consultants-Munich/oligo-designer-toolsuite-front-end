@@ -8,6 +8,8 @@ CALLBACK_ROOT = "backend.worker.callbacks"
 
 
 class Tasks:
+    """The names of the Celery tasks, used to send them without importing the worker code."""
+
     RUN_PIPELINE = TASK_ROOT + ".run_pipeline"
     RUN_GENOMIC_REGION_GENERATOR = TASK_ROOT + ".run_genomic_region_generator"
     TRIGGER_DROPDOWN_OPTIONS_FETCHING = TASK_ROOT + ".trigger_dropdown_options_fetching"

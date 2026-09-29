@@ -68,14 +68,13 @@ class PipelineRunner:
             self.cleanup_temp_files(form_data, config_path)
 
     def populate_temp_file(self, form_data: dict) -> None:
-        """Writes a tempfile which includes all Gene IDs listed in the `file_region_ids` field of
-        the pipeline configuration.
-
-        This is necessary, because ODT expects a file_path as the input
-        for the file_region_ids.
+        """Writes all gene IDs of the `targets` field to a temp file and stores its path in that field.
 
         Arguments:
-            form_data {dict} -- The pipeline configuration.
+            form_data {dict} -- The pipeline configuration, modified in place.
+
+        Notes:
+            This is needed because ODT expects a file path for `targets`, not a comma separated list of genes.
         """
         required_parameters = glom(form_data, "required_parameters")
         file_region_ids = required_parameters["targets"]
@@ -90,30 +89,18 @@ class PipelineRunner:
     def populate_form_data_path_fields(
         self, config: dict, generated_region_paths: list[tuple[str, list[str]]]
     ) -> None:
-        """
-        This method converts the form_data sent by the frontend to the format used by ODT.
-
-        It is necessary because the Oligo Designer Toolsuite expects a list of file paths per `files_[...]` field like:
-        ```py
-        {"files_field": ["input_file.fna"]}
-        ```
-        Since we forbid passing file paths directly and we allow creation of custom genomic regions via the region generator, the form_data has the following scheme:
-        ```py
-        {"files_field": {
-            "files": [FileStorageObject],
-            "fasta_form": [FastaFormObject]
-        }}
-        ```
-        The files listed under `"files":` are saved to disk and the resulting paths are injected into the form data.
-        The forms listed under `"fasta_form":` are processed by the genomic_region_generator which results in a list of tuples like:
-        ```py
-        [("files_field", ["generated_genomic_regions_file_path"])]
-        ```
-        These paths also get injected into the form data here.
+        """Sets each genome field to the file paths made by the genomic region generator.
 
         Arguments:
-            config {dict} -- Form Data of request
-            generated_region_paths {list[tuple[str, list[str]]]} -- A list of tuples of input_field_id and belonging paths of generated genomic regions
+            config {dict} -- The pipeline configuration, modified in place.
+            generated_region_paths {list[tuple[str, list[str]]]} -- Field paths and their generated files.
+
+        Notes:
+            ODT expects a list of file paths per genome field, like `{"target_genome": ["input_file.fna"]}`.
+            The form holds genomic region generator forms there instead. Those forms are run by the
+            genomic region generator first, which gives a list like
+            `[("required_parameters.target_genome", ["generated_genomic_regions_file_path"])]`.
+            This method puts those paths into the configuration.
         """
 
         # Initialize generated region paths in config with empty lists
@@ -212,7 +199,7 @@ class PipelineRunner:
             form_data {dict} -- The pipeline configuration.
             output_path {str} -- The path where all output of the pipeline should be written.
         """
-        # find files_fasta_target_probe_database fasta file and read it
+        # The target gene file and the FASTA files of the target genome
         regions_file = glom(form_data, "required_parameters.targets")
 
         fasta_paths = glom(form_data, "required_parameters.target_genome")
@@ -252,7 +239,7 @@ class PipelineRunner:
             config_path {str} -- The configuration filepath.
         """
         required_parameters = glom(form_data, "required_parameters")
-        # Remove temp file for file_regions if it was created
+        # Remove the temp file written for `targets` if it was created
         if required_parameters["targets"]:
             temp_path = required_parameters["targets"].strip()
             if os.path.exists(temp_path):

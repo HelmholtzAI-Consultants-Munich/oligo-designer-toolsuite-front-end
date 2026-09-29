@@ -14,9 +14,20 @@ export const spaceBeforeCapitalLetters = (str: string): string =>
 // `TabsLayout` mounts them inside the first tab so their fields still portal into its panels.
 const EXCLUDED_TABS = new Set(["schema_version", "required_parameters"]);
 
+/**
+ * Whether a tab is hidden from the tab bar.
+ *
+ * @param tab - the tab's name
+ * @returns true if the tab gets no tab or pane of its own
+ */
 export const isHiddenTab = (tab: string) => EXCLUDED_TABS.has(tab);
 
-/** The `required_parameters` description, which heads a panel rather than a section of its own. */
+/**
+ * Gets the `required_parameters` description, which heads a panel rather than a section of its own.
+ *
+ * @param schema - the pipeline's JSON Schema
+ * @returns The description, or undefined if there is none
+ */
 export const requiredParametersDescription = (
     schema: RJSFSchema
 ): string | undefined => {
@@ -29,23 +40,49 @@ export const requiredParametersDescription = (
 export const excludeHiddenTabs = (tabs: string[]) =>
     tabs.filter((tab) => !isHiddenTab(tab));
 
-/** A section's accordion key, matching the `fieldPathId.$id` RJSF gives that section. */
+/**
+ * Builds a section's accordion key, matching the `fieldPathId.$id` RJSF gives that section.
+ *
+ * @param tabId - the tab's id
+ * @param name - the section's name
+ * @returns The accordion key
+ */
 export const sectionKey = (tabId: string, name: string): string =>
     `${tabId}_${name}`;
 
-/** Whether every field a section owns already portals into Quick Settings, leaving it empty. */
+/**
+ * Whether every field of a section is moved into Quick Settings, leaving the section empty.
+ *
+ * @param uiSchema - the section's UiSchema
+ * @returns true if the section is empty
+ */
 export const isEmptySection = (uiSchema: UiSchema | undefined): boolean =>
     getUiOptions(uiSchema).allFieldsPortaled === true;
 
-/** Whether a union stands where a section does, and so takes the tab's accordion. */
+/**
+ * Whether a union sits at section level, and so gets the tab's accordion.
+ *
+ * @param uiSchema - the union's UiSchema
+ * @returns true if the union renders as a section
+ */
 export const isSectionLevel = (uiSchema: UiSchema | undefined): boolean =>
     getUiOptions(uiSchema).sectionLevel === true;
 
-/** Whether a field renders as `<input type="hidden">`, e.g. a discriminator's own const value. */
+/**
+ * Whether a field renders as `<input type="hidden">`, e.g. a discriminator's own const value.
+ *
+ * @param uiSchema - the field's UiSchema
+ * @returns true if the field is hidden
+ */
 export const isHiddenField = (uiSchema: UiSchema | undefined): boolean =>
     getUiOptions(uiSchema).widget === "hidden";
 
-/** Narrows away the `true`/`false` form a property schema can take, which carries no keywords. */
+/**
+ * Drops the `true`/`false` form a property schema can take, which has no keywords.
+ *
+ * @param schema - a property schema
+ * @returns The schema object, or undefined if it is a boolean or missing
+ */
 const asSchema = (
     schema: RJSFSchema | boolean | undefined
 ): (RJSFSchema & Record<string, unknown>) | undefined =>
@@ -57,7 +94,7 @@ const asSchema = (
  *
  * @param schema - the field's JSON Schema, unresolved `$ref`s included
  * @param flag - the flag's keyword, e.g. `x-collapsed`
- * @returns A boolean that is True if the flag is set
+ * @returns true if the flag is set
  */
 export const hasSchemaFlag = (
     schema: RJSFSchema | boolean | undefined,
@@ -69,7 +106,7 @@ export const hasSchemaFlag = (
  * filter, which renders as a checkbox rather than a schema picker.
  *
  * @param schema - the field's JSON Schema
- * @returns A boolean that is True if the discriminator is `enabled`
+ * @returns true if the discriminator is `enabled`
  */
 export const isEnabledDiscriminated = (
     schema: RJSFSchema | boolean | undefined
@@ -88,7 +125,7 @@ const holdsChildren = (option: RJSFSchema | boolean): boolean => {
  *
  * @param schema - the field's JSON Schema, unresolved `$ref`s included
  * @param uiSchema - the field's UiSchema
- * @returns A boolean that is True if the field spans the full row
+ * @returns true if the field spans the full row
  */
 export const spansFullRow = (
     schema: RJSFSchema | boolean | undefined,
@@ -138,7 +175,7 @@ export const quickSettingGroup = (
  * TODO: Remove this filter once discriminators in the forms no longer produce these errors alongside the informative ones.
  *
  * @param error - error message that gets checked
- * @returns A boolean that is True if the error is informative
+ * @returns true if the error is informative
  */
 export const filterUninformativeErrors = (error: string) =>
     ![

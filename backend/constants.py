@@ -1,3 +1,5 @@
+"""Defines the constants shared by the API and the worker, mostly per-pipeline settings."""
+
 from collections.abc import Callable, Mapping
 from typing import NamedTuple
 
@@ -23,6 +25,13 @@ USER_DENYLIST_COLLECTION_KEY = "user_denylist"
 
 
 class Pipeline(NamedTuple):
+    """An ODT pipeline: its configuration model and the function that runs it.
+
+    Attributes:
+        model {type[pydantic.BaseModel]} -- the model that validates the pipeline configuration
+        function {Callable} -- the ODT function that runs the pipeline
+    """
+
     model: type[BaseModel]
     function: Callable
 
@@ -37,10 +46,10 @@ PIPELINE_GENOMIC_INPUT: Mapping[str, list[str]] = {
     for pipeline in ["oligoseq", "scrinshot", "merfish", "seqfish", "hcr", "cyclehcr"]
 }
 
-# Paths to fields naming user-uploaded files. A path holds either a list of names or, for the
-# codebooks and probe tables a "load" branch reads, a single one; both shapes are handled where
-# these are saved (`save_files`) and cleaned up. A path missing from a submission is skipped, so
-# listing the "load" fields costs nothing when the user picked "generate" instead.
+# Paths to the form fields that hold user-uploaded files. A field holds a list of file names, or a
+# single one for the codebooks and probe tables of a "load" option. Both shapes are handled where
+# the files are saved (`save_files`) and cleaned up. Paths missing from a submission are skipped,
+# so listing the "load" fields does no harm when the user picked "generate" instead.
 PIPELINE_FILE_INPUT: Mapping[str, list[str]] = {
     "oligoseq": ["target_probes.specificity_filters.variant_filter.files_vcf_reference_database"],
     "merfish": ["readout_probes.codebook.file", "readout_probes.readout_probe_table.file"],

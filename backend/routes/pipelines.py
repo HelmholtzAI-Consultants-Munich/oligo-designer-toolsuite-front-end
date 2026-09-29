@@ -44,7 +44,7 @@ from backend.utils import utc_now
 from backend.worker.models import PIPELINE_VALIDATION_MODELS
 from backend.worker.task_index import Callbacks, Tasks
 
-# Blueprint for Merfish endpoints
+# Blueprint for the pipeline run endpoints
 pipelines_bp = Blueprint("pipelines", __name__)
 
 # Pipelines are enabled once ODT exposes a pydantic model for them.
@@ -422,14 +422,14 @@ def _require_saved_file(
     Arguments:
         file_name {str} -- the name the form data refers to the upload by.
         files {ImmutableMultiDict[str, FileStorage]} -- uploaded files from the request.
-        saved_files {dict[FileStorage, Path]} -- already-saved files, shared across calls.
+        saved_files {dict[FileStorage, pathlib.Path]} -- already-saved files, shared across calls.
 
     Notes:
         A name left unreplaced would reach the worker as a path on this server, so a request
         could point the pipeline at any file it can read.
 
     Returns:
-        Path -- where the file was saved.
+        pathlib.Path -- where the file was saved.
     """
     file_path = save_file(file_name, files, saved_files)
     if file_path is None:
@@ -512,12 +512,10 @@ def enforce_concurrent_runs_limit(context: RunContext, is_authenticated: bool):
 
 @pipelines_bp.route("/api/<pipeline_name>", methods=["POST"])
 def start_pipeline(pipeline_name: str):
-    """Entry point for submitting a pipeline run.
+    """Validates a pipeline run request, saves its files and enqueues the run.
 
     Arguments:
-        pipeline_name {str} -- which pipeline to run — checked against
-        EXISTING_PIPELINES since only pipelines with pydantic integration
-        are enabled.
+        pipeline_name {str} -- which pipeline to run, checked against EXISTING_PIPELINES.
 
     Form Data:
         payload {str} -- JSON-encoded object with formdata (the pipeline
@@ -536,9 +534,9 @@ def start_pipeline(pipeline_name: str):
         8. Return the run's id and queue position.
 
     Notes:
-        init_run() creates the DB entry before enqueue_pipeline() so the pipeline task can
-        always find its run document; update_run_with_context() only writes queue/context info
-        afterward, once enqueueing has actually succeeded.
+        init_run() creates the DB entry before enqueue_pipeline(), so the pipeline task can
+        always find its run document. update_run_with_context() writes the queue and context
+        info only afterwards, once enqueueing has succeeded.
 
     Returns:
         flask.Response -- the new run's id and its queue position.

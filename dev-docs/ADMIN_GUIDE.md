@@ -12,6 +12,7 @@ It is recommended to update one dependency ecosystem at a time (e.g. npm, Python
 | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | Frontend (npm)                   | [`package.json`](/package.json), [`package-lock.json`](/package-lock.json)                                              | see [npm audit](https://docs.npmjs.com/cli/v12/commands/npm-audit), [npm update](https://docs.npmjs.com/cli/v12/commands/npm-update) |
 | Backend (Python)                 | [`backend/pyproject.toml`](/backend/pyproject.toml)                                                                     | change version tags and reinstall                                                                                                    |
+| Oligo Designer Toolsuite (ODT)   | [`backend/pyproject.toml`](/backend/pyproject.toml), `ODT_REF`                                                          | change version range and rebuild, see [`ODT_REF`](/docker/README.md#using-an-unreleased-odt-version) for unreleased versions         |
 | Backend (conda)                  | [`backend/environment.yml`](/backend/environment.yml)                                                                   | change version tags and reinstall                                                                                                    |
 | Backend (conda, worker-specific) | [`backend/worker.environment.yml`](/backend/worker.environment.yml)                                                     | change version tags and reinstall                                                                                                    |
 | External Docker images           | [`compose.yml`](/compose.yml), [`compose.prod.yml`](/compose.prod.yml), [`compose.override.yml`](/compose.override.yml) | change version tags and restart                                                                                                      |
@@ -36,7 +37,7 @@ However, releasing a new version is not as simple as pushing a new tag. This sec
 To release a new version, first bump the version in [`package.json`](/package.json) using [npm version](https://docs.npmjs.com/cli/v12/commands/npm-version).
 Then publish a new ODT Cloud Docker image:
 
-1. Ensure that all required build variables used in [`.github/workflows/publish_images.yml`](/.github/workflows/publish_images.yml) are properly configured in GitHub's repository [variables](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/settings/variables/actions) and [secrets](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/settings/secrets/actions).
+1. Ensure that all required build variables used in [`.github/workflows/publish_images.yml`](/.github/workflows/publish_images.yml) are properly configured in GitHub's repository [variables](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/settings/variables/actions) and [secrets](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/settings/secrets/actions). The repository variable `ODT_REF` overrides the ODT release from PyPI in the `odt-server` and `odt-worker` images, so leave it unset unless the release really needs an unreleased ODT version.
 2. Create and push a git tag on the `main` branch via the GitHub UI using the format:
 
 ```
@@ -49,6 +50,17 @@ where `<VERSION>` is the semantic version being released, for example:
 - `v0.2.0-alpha.4`
 
 The GitHub Actions workflow will automatically build and publish the Docker image for the new tag.
+
+### Security Scanning and SBOM
+
+After [`.github/workflows/publish_images.yml`](/.github/workflows/publish_images.yml) has pushed the `odt-server`, `odt-worker` and `odt-web` images of a release, it scans each of them with [Trivy](https://trivy.dev/):
+
+- SBOM: a CycloneDX software bill of materials that lists everything inside the image. It is saved as the workflow artifact `sbom-<image>`, e.g. `sbom-odt-server`.
+- Vulnerabilities: `HIGH` and `CRITICAL` findings are uploaded to the repository's **Security → Code scanning** page.
+
+Neither step fails the workflow, since a vulnerability in a base image must not block a release.
+
+A vulnerability disclosed after a release still affects the published images, but nothing rebuilds them. [`.github/workflows/security_scan.yml`](/.github/workflows/security_scan.yml) therefore re-scans the `latest` tag of each published image every Monday at 03:00 UTC and reports `HIGH` and `CRITICAL` findings to **Code scanning** as well. It can also be triggered manually from the GitHub Actions page. npm dependencies are not scanned there, since they are compiled into a static bundle; use `npm audit` for them (see [Bumping dependencies](#bumping-dependencies)).
 
 ### Deploying ODT Cloud
 

@@ -15,7 +15,10 @@ interface ErrorAlertProps {
  * The page-level box reporting that something failed, with the contact note every such
  * report carries.
  *
- * @param props - the variant, icon and title to head the alert with, over the message
+ * @param variant - Bootstrap variant of the alert
+ * @param icon - icon shown before the title
+ * @param title - the alert's heading
+ * @param children - the message, in the user's terms
  * @returns A React Component holding the message above a note on how to reach us
  */
 export default function ErrorAlert({

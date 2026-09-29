@@ -19,11 +19,11 @@ const QUICK_SETTINGS_DESCRIPTION =
  * @remarks
  * The panels only provide the containers; the fields stay where they are in the form and
  * portal their markup in here (see `FieldTemplate`), so their data binding is untouched.
- * CSS hides a panel whose container is empty, which is what keeps the required one off
- * every tab but the first.
+ * CSS hides empty panels, so the required panel only shows on the first tab.
  *
  * @param children - the rest of the tab, rendered below the panels
  * @param title - heading shown above the tunable settings
+ * @param requiredDescription - description of the required parameters, shown as a tooltip
  * @returns A React Component that heads a tab with its quick settings
  */
 const QuickSettingsPanel = ({

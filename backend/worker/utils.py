@@ -4,23 +4,32 @@ from pydantic import BaseModel
 
 
 def build_fallback_error_message(runner_type: str):
+    """Builds the generic error message shown to the user when a runner fails.
+
+    Arguments:
+        runner_type {str} -- the kind of runner that failed, as named in the message
+
+    Returns:
+        str -- the user-facing error message
+    """
     return f"The {runner_type} failed to execute. Please check your input and try again. If the error persists, please inform us of the issue."
 
 
 def strip_local_descriptions(schema: dict, namespace: dict, module_name: str) -> dict:
-    """Drops the descriptions Pydantic derives from the caller module's own class docstrings.
-
-    Those docstrings say why an ODT model is overridden, which is a note for developers, but the
-    front-end renders a model's description as a section subtitle or a tooltip. ODT's own
-    descriptions are written for users and are left alone.
+    """Removes the schema descriptions that Pydantic takes from the caller module's own class docstrings.
 
     Arguments:
         schema {dict} -- the generated JSON Schema, modified in place
         namespace {dict} -- the caller's `globals()`, holding both its own models and any it imported
-        module_name {str} -- the caller's `__name__`, so an imported model can be told from its own
+        module_name {str} -- the caller's `__name__`, to tell its own models from imported ones
+
+    Notes:
+        Those docstrings explain why an ODT model is overridden, which is a note for developers, but
+        the front-end shows a model's description as a section subtitle or a tooltip. ODT's own
+        descriptions are written for users and are kept.
 
     Returns:
-        {dict} -- the same schema without the caller module's docstrings
+        dict -- the same schema without the caller module's docstrings
     """
     local = {
         value.__name__
@@ -36,19 +45,19 @@ def strip_local_descriptions(schema: dict, namespace: dict, module_name: str) ->
 
 
 def accept_uploaded_files(schema: dict, *fields: str) -> dict:
-    """Widens fields naming a file so the front-end's `File` object validates against them.
-
-    A file input holds the picked `File` in the form data until submission, where it is swapped
-    for the name the backend saved it under. The model types these fields as the path they end
-    up being, which a `File` is not, so the schema the form validates against has to accept an
-    object as well.
+    """Lets file path fields also accept an object, so the front-end's `File` passes validation.
 
     Arguments:
         schema {dict} -- the generated JSON Schema, modified in place
-        *fields {str} -- names of the properties to widen, at any depth
+        *fields {str} -- the names of the properties to widen, at any depth
+
+    Notes:
+        A file input keeps the picked `File` in the form data until submission, when it is replaced
+        by the name the backend saved it under. The model types these fields as the saved path,
+        which a `File` is not, so the schema the form validates against must accept an object too.
 
     Returns:
-        {dict} -- the same schema, with those properties accepting an object too
+        dict -- the same schema, with those properties accepting an object too
     """
 
     def as_path_or_file(schema: dict) -> dict:

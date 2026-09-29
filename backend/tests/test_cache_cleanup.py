@@ -60,7 +60,10 @@ def run_cleanup(cache_root: Path, referenced: set[Path], changed_at=old_changed_
     Arguments:
         cache_root {pathlib.Path} -- The cache root directory to clean up.
         referenced {set[pathlib.Path]} -- The paths the file cache is pretending to reference.
-        changed_at {Callable | None} -- Replacement for the change time lookup, None uses the real one.
+
+    Keyword Arguments:
+        changed_at {Callable[[pathlib.Path], float] | None} -- Replacement for the change time lookup,
+            None uses the real one (default: old_changed_at)
 
     Returns:
         dict[str, int] -- The counters returned by the task.

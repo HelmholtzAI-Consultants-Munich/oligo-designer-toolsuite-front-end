@@ -5,23 +5,29 @@ import { BACKEND_URL } from "../config";
 import { uiSchemaFromJsonSchema } from "./uiSchemas";
 import type { Pipeline } from "./config";
 
-// Without a limit axios waits forever, leaving the form on its spinner for a backend that
-// accepts the connection but never answers. Generous: the backend serves this from memory, so
-// anything approaching it is a hung server rather than a slow one.
+// Without a timeout axios waits forever, leaving the form on its spinner if the backend accepts the
+// connection but never answers. The limit is generous: the backend serves the schema from memory, so
+// hitting it means the server hangs, not that it is slow.
 const SCHEMA_REQUEST_TIMEOUT_MS = 15_000;
 
+/** A pipeline's JSON Schema and the UI Schema derived from it. */
 export interface PipelineSchemas {
     schema: RJSFSchema;
     uiSchema: UiSchema;
 }
 
-// A schema only changes when the backend restarts on a different ODT version, so it is fetched
-// once per page load and kept here. Both maps earn their place: caching the promise means two
-// components mounting in the same tick share one request, and caching the value means a revisit
-// renders the form straight away, instead of showing a spinner while it is built.
+// A schema only changes when the backend restarts on a different ODT version, so it is fetched once
+// per page load and kept here. `pending` caches the promise, so components that mount together share
+// one request. `resolved` caches the value, so a revisit renders the form at once, without a spinner.
 const pending = new Map<string, Promise<PipelineSchemas>>();
 const resolved = new Map<string, PipelineSchemas>();
 
+/**
+ * Fetches a pipeline's schema, derives its UI Schema and stores both in `resolved`.
+ *
+ * @param pipeline - name of the pipeline
+ * @returns A promise of the schemas
+ */
 const requestPipelineSchema = async (
     pipeline: Pipeline["name"]
 ): Promise<PipelineSchemas> => {
@@ -34,7 +40,12 @@ const requestPipelineSchema = async (
     return schemas;
 };
 
-/** The pipeline's schemas if they have already arrived, so a revisit renders without a flash. */
+/**
+ * Gets the pipeline's schemas if they have already arrived, so a revisit renders without a flash.
+ *
+ * @param pipeline - name of the pipeline
+ * @returns The cached schemas, or undefined if they have not arrived yet
+ */
 export const peekPipelineSchema = (
     pipeline: Pipeline["name"]
 ): PipelineSchemas | undefined => resolved.get(pipeline);
@@ -61,14 +72,13 @@ export const fetchPipelineSchema = (
 };
 
 /**
- * Explains a failed schema fetch in the terms the reader needs.
+ * Turns a failed schema fetch into a message for the user.
  *
  * @remarks
- * `getErrorMessage` prefers axios's own wording, which is "Network Error" whenever the backend
- * cannot be reached at all -- the very case a reader needs telling what to do about.
+ * Used instead of `getErrorMessage`, which shows axios's "Network Error" when the backend cannot be reached.
  *
  * @param error - whatever `fetchPipelineSchema` rejected with
- * @returns The backend's own explanation if it answered, and advice if it did not
+ * @returns The backend's error message if it answered, otherwise advice to check the connection
  */
 export const schemaErrorMessage = (error: unknown): string =>
     (axios.isAxiosError<{ error?: string }>(error) &&

@@ -159,11 +159,9 @@ export const CYCLEHCR_PIPELINE: PipelineDefinition = {
 };
 
 /**
- * Pipelines checked by the `@smoke` test's page-render sweep.
- *
- * @remarks
- * All of them, now that every pipeline has an ODT pydantic model. The sweep only renders the
- * pages and spot-checks a field per tab, so it stays cheap.
+ * All pipelines, checked by the `@smoke` test's page-render sweep. Every pipeline has an ODT
+ * pydantic model, so all of them are included. The sweep only renders each page and spot-checks a
+ * field per tab, so it stays cheap.
  */
 export const ALL_PIPELINES: PipelineDefinition[] = [
     SCRINSHOT_PIPELINE,
@@ -187,13 +185,15 @@ const MAX_COLLAPSED_SECTIONS = 100;
  * still collapsed is `display: none`, so its fields fail Playwright's actionability checks.
  *
  * @remarks
- * "Expand all" rather than clicking each header: a header click closes the other sections,
- * so expanding them one by one would re-collapse whatever an earlier step opened.
+ * Uses "Expand all" rather than clicking each header: a header click closes the other sections,
+ * so expanding them one by one would collapse again whatever an earlier step opened.
+ *
+ * @param page - the Playwright page with the pipeline form open
  */
 export const expandSections = async (page: Page) => {
-    // scoped to the tab on screen: a toggle in another pane is `display: none` forever, so
-    // clicking it just burns the timeout. Inside this pane the hidden block still needs the
-    // visibility check below.
+    // only the visible tab: a toggle in another tab is always `display: none`, so clicking it
+    // would just wait for the timeout. Inside this tab, hidden blocks still need the visibility
+    // check below.
     const activeTab = page.locator(".tab-pane.active");
 
     for (const button of await activeTab
@@ -203,14 +203,14 @@ export const expandSections = async (page: Page) => {
             await button.click();
         }
     }
-    // No visibility guard here: the click has to wait out the section's opening animation,
-    // where a guard would instead skip the toggle for being hidden mid-flight.
+    // No visibility check here: the click has to wait for the section's opening animation, and a
+    // check would skip the toggle for being hidden during it.
     const collapsed = activeTab.locator(
         '[aria-controls^="collapsible-section"][aria-expanded="false"]'
     );
-    // clicking one drops it out of the set; re-count each time, so a group revealed by
-    // opening another is opened too. Capped, so a toggle that stops flipping aria-expanded
-    // fails here instead of at the 20-minute test timeout.
+    // clicking a toggle drops it out of the set. Re-count after each click, so a group revealed by
+    // opening another is opened too. The cap makes a toggle that stops flipping `aria-expanded`
+    // fail here instead of at the 20-minute test timeout.
     for (let clicks = 0; (await collapsed.count()) > 0; clicks++) {
         if (clicks >= MAX_COLLAPSED_SECTIONS) {
             throw new Error(
@@ -229,6 +229,8 @@ export const expandSections = async (page: Page) => {
  * The pre-filled `-strand minus`, `-word_size 10` and `-perc_identity 80` search the reference
  * far more sensitively than blastn would by default. Every remaining oligo then matches
  * something and is dropped as non-specific, and the run ends on an empty database.
+ *
+ * @param page - the Playwright page with the pipeline form open
  */
 export const clearBlastnSearchOverrides = async (page: Page) => {
     for (const strand of await page
@@ -480,12 +482,16 @@ const setGenomicInput = async (
 };
 
 /**
- * Fills the inputs a run cannot start without, plus the VCF upload where a pipeline has one.
- * The variant filter taking the VCF files is off by default, so it is switched on first.
+ * Fills the inputs every pipeline needs to start a run: targets, target genome and reference genome.
+ * If VCF files are given, it turns on the variant filter (off by default) and uploads them.
  *
  * @remarks
- * Every pipeline shares these three, and `reference_genome` now covers the readout-probe and
- * primer specificity filters that used to take a fasta file each.
+ * `reference_genome` also covers the readout-probe and primer specificity filters, so no other
+ * genome input is needed.
+ *
+ * @param page - the Playwright page with the pipeline form open
+ * @param options.targets - the target genes to enter
+ * @param options.fastaVcfFiles - VCF files to upload; the variant filter stays off if omitted
  */
 export const fillRequiredParameters = async (
     page: Page,

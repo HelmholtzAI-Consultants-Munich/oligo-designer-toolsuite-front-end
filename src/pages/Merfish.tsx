@@ -2,6 +2,7 @@ import { memo } from "react";
 import PipelineForm from "../components/forms/PipelineForm";
 import { PIPELINE_CONFIG } from "../pipelineConfig/config";
 
+/** The MERFISH probe designer page. */
 const Merfish: React.FC = memo(() => (
     <PipelineForm
         pipeline="merfish"

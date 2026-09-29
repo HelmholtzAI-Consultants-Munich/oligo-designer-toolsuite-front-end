@@ -113,8 +113,7 @@ GenomicInput = list[GenomicRegionGeneratorNcbi | GenomicRegionGeneratorEnsembl]
 
 
 class RequiredParameters(BaseModel):
-    """Overwrites ODT's `RequiredParameters` to use `GenomicInput` for the genome fields
-    instead of the default file path type."""
+    """Overrides ODT's `RequiredParameters` to use `GenomicInput` instead of file paths for the genomes."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -133,6 +132,8 @@ class RequiredParameters(BaseModel):
     )  # type: ignore
 
 
+# The form models per pipeline: each ODT `...ConfigBase` with the genome fields swapped for
+# `GenomicInput`, so the form can offer the genomic region generator.
 FRONT_END_SCHEMAS: dict[str, type[BaseModel]] = {
     name: create_model(
         f"{base.__name__.removesuffix('Base')}FrontEnd",
@@ -158,14 +159,14 @@ PIPELINE_VALIDATION_MODELS: dict[str, type[BaseModel]] = {
 
 
 def build_pipeline_schema(name: str) -> dict:
-    """Generates the JSON Schema the front-end builds `name`'s form from.
+    """Builds the JSON Schema that the front-end form of a pipeline is built from.
 
     Arguments:
         name {str} -- the pipeline's key in `FRONT_END_SCHEMAS`
 
     Returns:
-        {dict} -- the JSON Schema, without this module's developer-facing docstrings and with the
-        file inputs widened to accept the front-end's `File` objects
+        dict -- the JSON Schema, without this module's developer-facing docstrings and with the
+            file inputs widened to accept the front-end's `File` objects
     """
     schema = strip_local_descriptions(FRONT_END_SCHEMAS[name].model_json_schema(), globals(), __name__)
     # every uploaded input holds a File in the form where ODT wants the path it is saved to
