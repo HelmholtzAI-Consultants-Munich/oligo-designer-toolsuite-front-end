@@ -105,8 +105,6 @@
     "columns": [
       "oligo_id",
       "location",
-      "length",
-      "GC_content",
       "sequence_target"
     ]
   },
