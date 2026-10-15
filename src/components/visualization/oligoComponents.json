@@ -198,5 +198,23 @@
       "GC_content",
       "sequence_target"
     ]
+  },
+  "hcr": {
+    "columns": [
+      "oligo_id",
+      "location",
+      "TmNN_oligo_L",
+      "TmNN_oligo_R",
+      "sequence_target"
+    ]
+  },
+  "cyclehcr": {
+    "columns": [
+      "oligo_id",
+      "location",
+      "TmNN_oligo_L",
+      "TmNN_oligo_R",
+      "sequence_target"
+    ]
   }
 }
