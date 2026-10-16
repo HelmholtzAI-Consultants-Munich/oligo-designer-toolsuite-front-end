@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-16
+
+### Added
+
+- show the versions of ODT and ODT-Cloud that are deployed in the footer
+
+### Fixed
+
+- the results pages for HCR and cylceHCR don't crash anymore
+- the results page for MERFISH removed unsupported columns in the oligo table
+
 ## [0.3.0] - 2026-09-26
 
 ### Added
