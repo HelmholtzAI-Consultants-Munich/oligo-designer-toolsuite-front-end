@@ -83,6 +83,7 @@ services:
         VITE_BACKEND_URL:
         VITE_FEEDBACK_MAX_LENGTH:
         VITE_TURNSTILE_SITE_KEY:
+        VITE_ODT_CLOUD_VERSION:
 
 volumes:
   data-access:
