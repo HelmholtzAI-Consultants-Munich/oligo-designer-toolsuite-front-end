@@ -90,9 +90,7 @@
           }
         },
         "variant_filter": {
-          "enabled": true,
-          "files_vcf_reference_database": ["data/oligoseq_mock_form_data.json"],
-          "action": "flag"
+          "enabled": false
         }
       },
       "probe_set_selection": {
@@ -310,11 +308,7 @@
             }
           },
           "variant_filter": {
-            "enabled": true,
-            "files_vcf_reference_database": [
-              "data/oligoseq_mock_form_data.json"
-            ],
-            "action": "flag"
+            "enabled": false
           }
         },
         "probe_set_selection": {
