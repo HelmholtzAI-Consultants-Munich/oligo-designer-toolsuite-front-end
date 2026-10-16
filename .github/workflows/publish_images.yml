@@ -41,6 +41,7 @@ jobs:
               VITE_BACKEND_URL=${{ vars.VITE_BACKEND_URL }}
               VITE_TURNSTILE_SITE_KEY=${{ vars.VITE_TURNSTILE_SITE_KEY }}
               VITE_FEEDBACK_MAX_LENGTH=${{ vars.VITE_FEEDBACK_MAX_LENGTH }}
+              VITE_ODT_CLOUD_VERSION=${{ github.ref_name }}
 
     permissions:
       contents: read

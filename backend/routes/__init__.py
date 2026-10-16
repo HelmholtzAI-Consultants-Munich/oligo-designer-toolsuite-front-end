@@ -8,6 +8,7 @@ from backend.routes.legal import legal_bp
 from backend.routes.pipelines import pipelines_bp
 from backend.routes.runs import runs_bp
 from backend.routes.schemas import schemas_bp
+from backend.routes.version import version_bp
 
 
 def register_blueprints(app):
@@ -31,3 +32,4 @@ def register_blueprints(app):
     app.register_blueprint(schemas_bp)  # same reason
     app.register_blueprint(pipelines_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(version_bp)
