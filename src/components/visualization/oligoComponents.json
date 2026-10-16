@@ -102,11 +102,7 @@
         "label": "Reverse Primer"
       }
     ],
-    "columns": [
-      "oligo_id",
-      "location",
-      "sequence_target"
-    ]
+    "columns": ["oligo_id", "location", "sequence_target"]
   },
   "oligoseq": {
     "components": [
