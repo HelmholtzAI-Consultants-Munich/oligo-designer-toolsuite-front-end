@@ -6,3 +6,6 @@ export const FEEDBACK_MAX_LENGTH =
 
 export const TURNSTILE_SITE_KEY =
     import.meta.env.VITE_TURNSTILE_SITE_KEY || "1x00000000000000000000AA";
+
+export const ODT_CLOUD_VERSION =
+    import.meta.env.VITE_ODT_CLOUD_VERSION || "dev";
