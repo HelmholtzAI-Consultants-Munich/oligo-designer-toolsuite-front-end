@@ -102,13 +102,7 @@
         "label": "Reverse Primer"
       }
     ],
-    "columns": [
-      "oligo_id",
-      "location",
-      "length",
-      "GC_content",
-      "sequence_target"
-    ]
+    "columns": ["oligo_id", "location", "sequence_target"]
   },
   "oligoseq": {
     "components": [
@@ -196,6 +190,24 @@
       "location",
       "length",
       "GC_content",
+      "sequence_target"
+    ]
+  },
+  "hcr": {
+    "columns": [
+      "oligo_id",
+      "location",
+      "TmNN_oligo_L",
+      "TmNN_oligo_R",
+      "sequence_target"
+    ]
+  },
+  "cyclehcr": {
+    "columns": [
+      "oligo_id",
+      "location",
+      "TmNN_oligo_L",
+      "TmNN_oligo_R",
       "sequence_target"
     ]
   }

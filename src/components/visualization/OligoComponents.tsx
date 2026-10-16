@@ -35,10 +35,15 @@ const OligoComponents: React.FC<Props> = ({ probes, selectedOligo }) => {
     const components: OligoComponent[] = useMemo(() => {
         const pipeline = oligo?.pipeline;
         if (pipeline && Object.keys(ComponentDefinition).includes(pipeline)) {
-            const componentDefinitions = ComponentDefinition[
-                pipeline as keyof typeof ComponentDefinition
-            ].components as OligoComponentDefinition[];
-            return collectComponents(oligo, componentDefinitions);
+            const componentDefinitions = (
+                ComponentDefinition[
+                    pipeline as keyof typeof ComponentDefinition
+                ] as { components?: OligoComponentDefinition[] }
+            ).components;
+            /* some pipelines might not have components defined */
+            if (componentDefinitions) {
+                return collectComponents(oligo, componentDefinitions);
+            }
         }
         return [];
     }, [oligo]);
