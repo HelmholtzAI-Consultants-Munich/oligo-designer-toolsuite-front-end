@@ -25,27 +25,27 @@ export default function Footer() {
             <Container className="d-flex flex-column flex-md-row justify-content-around align-items-md-center gap-2">
                 <p className="site-footer-copy mb-0">
                     Oligo Designer Toolsuite
-                        <small className="d-block text-muted">
-                            ODT-Cloud {ODT_CLOUD_VERSION}
-                            {odtVersion && (
-                                <>
-                                     {" · "}ODT {odtVersion}
-                                    {odtCommit && (
-                                        <>
-                                            {" ("}
-                                            <a
-                                                href={`https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite/commit/${odtCommit}`}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                            >
-                                                {odtCommit.slice(0, 7)}
-                                            </a>
-                                            {")"}
-                                        </>
-                                    )}
-                                </>
-                            )}
-                        </small>
+                    <small className="d-block text-muted">
+                        ODT-Cloud {ODT_CLOUD_VERSION}
+                        {odtVersion && (
+                            <>
+                                {" · "}ODT {odtVersion}
+                                {odtCommit && (
+                                    <>
+                                        {" ("}
+                                        <a
+                                            href={`https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite/commit/${odtCommit}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                        >
+                                            {odtCommit.slice(0, 7)}
+                                        </a>
+                                        {")"}
+                                    </>
+                                )}
+                            </>
+                        )}
+                    </small>
                 </p>
                 <Nav as="ul" variant="tight">
                     <Nav.Item as="li">
