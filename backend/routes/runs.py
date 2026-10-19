@@ -20,8 +20,9 @@ Notes:
 from http import HTTPStatus
 from typing import Any
 
+import yaml
 from bson import ObjectId
-from flask import Blueprint, abort, current_app, jsonify, send_file, session
+from flask import Blueprint, Response, abort, current_app, jsonify, request, send_file, session
 from flask_login import current_user
 
 from backend.extensions import db
@@ -211,10 +212,10 @@ def get_run_config(run_id: ObjectId):
 
     Notes:
         This lets the frontend re-populate a form from a past run's saved
-        config.
+        config. `?format=yaml` returns it as YAML for download.
 
     Returns:
-        flask.Response -- the saved PipelineConfigExport JSON.
+        flask.Response -- the saved PipelineConfigExport, as JSON or YAML.
     """
     run = get_run_or_404(run_id, require_ownership=True)
 
@@ -222,6 +223,8 @@ def get_run_config(run_id: ObjectId):
     if pipeline_run_config is None:
         abort(HTTPStatus.NOT_FOUND, description="No saved config for this run.")
 
+    if request.args.get("format") == "yaml":
+        return Response(yaml.safe_dump(pipeline_run_config, sort_keys=False), mimetype="application/yaml")
     return jsonify(pipeline_run_config), HTTPStatus.OK
 
 
