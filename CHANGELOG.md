@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-19
+
+### Fixed
+
+- the default of `soft_mask = false` is shown correctly in the frontend instead of an undefined value
+
 ## [0.4.0] - 2026-10-16
 
 ### Added
