@@ -108,7 +108,7 @@ See the [Oligo Designer Toolsuite](https://oligo-designer-toolsuite.readthedocs.
   - Conda for environment setup
   - MongoDB as database
 
-For a more detailed description of the architecture see our [Architecture Documentation](ARCHITECTURE.md).
+For a more detailed description of the architecture see our [Architecture Documentation](dev-docs/ARCHITECTURE.md).
 
 ## License
 
