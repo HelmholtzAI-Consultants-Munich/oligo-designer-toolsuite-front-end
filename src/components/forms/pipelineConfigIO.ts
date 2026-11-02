@@ -8,6 +8,8 @@ export interface PipelineConfigExport {
         version: number;
         pipeline: string;
         exportedAt: string;
+        /** the ODT build the run used, stamped by the backend for debugging and ignored on import */
+        odt?: { version: string; commit: string | null };
     };
     config: RJSFFormData;
 }

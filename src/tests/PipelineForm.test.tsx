@@ -13,12 +13,54 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import PipelineForm from "../components/forms/PipelineForm";
 import { BACKEND_URL } from "../config";
-import { clearPipelineSchemaCache } from "../pipelineConfig/schemaApi";
+import {
+    clearPipelineSchemaCache,
+    type PipelinePreset,
+} from "../pipelineConfig/schemaApi";
 import testSchema from "./fixtures/pipeline.schema.json";
 
-/** Answers every schema request with the test schema, as the backend would. */
-const mockSchemaResponse = () =>
-    vi.spyOn(axios, "get").mockResolvedValue({ data: testSchema });
+const PRESETS_URL = `${BACKEND_URL}/api/pipelines/oligoseq/presets`;
+
+/**
+ * Answers the schema request with the test schema and the presets request with `presets`.
+ *
+ * @param presets - the presets the backend should send
+ * @returns The spy, to check which requests were made
+ */
+const mockSchemaResponse = (presets: PipelinePreset[] = []) =>
+    vi.spyOn(axios, "get").mockImplementation((url: string) =>
+        Promise.resolve({
+            data: url === PRESETS_URL ? presets : testSchema,
+        })
+    );
+
+/**
+ * Builds a small preset for the tests.
+ *
+ * @param id - the preset's id, also used as its label
+ * @returns A preset that fits the test schema
+ */
+const preset = (id: string): PipelinePreset => ({
+    id,
+    label: id,
+    payload: {
+        _meta: { version: 2, pipeline: "oligoseq" },
+        config: { target_probes: {} },
+    },
+});
+
+/**
+ * Records the modals the form opens, since the modal itself is not rendered in these tests.
+ *
+ * @returns The titles of the modals opened so far
+ */
+const recordModals = () => {
+    const titles: string[] = [];
+    window.addEventListener("modal:show", (event) =>
+        titles.push((event as CustomEvent<{ title: string }>).detail.title)
+    );
+    return titles;
+};
 
 /** Mounts the form under a router, which `ErrorAlert`'s contact link needs. */
 const renderForm = () =>
@@ -32,6 +74,7 @@ beforeEach(() => {
     // the cache outlives a test: it is module state, not component state
     clearPipelineSchemaCache();
     vi.restoreAllMocks();
+    localStorage.clear();
 });
 
 describe("PipelineForm", () => {
@@ -62,7 +105,11 @@ describe("PipelineForm", () => {
         renderForm();
         renderForm();
 
-        await waitFor(() => expect(get).toHaveBeenCalledTimes(1));
+        await waitFor(() =>
+            expect(
+                get.mock.calls.filter(([url]) => url.endsWith("/schema"))
+            ).toHaveLength(1)
+        );
     });
 
     it("tells an unreachable backend apart from one that answered with a reason", async () => {
@@ -116,5 +163,46 @@ describe("PipelineForm", () => {
         renderForm();
 
         await waitFor(() => expect(get).toHaveBeenCalledTimes(2));
+    });
+
+    it("applies the only preset without asking and remembers it", async () => {
+        mockSchemaResponse([preset("default")]);
+        const modals = recordModals();
+
+        renderForm();
+
+        await waitFor(() =>
+            expect(localStorage.getItem("odt.preset.oligoseq")).toBe("default")
+        );
+        expect(modals).toEqual([]);
+    });
+
+    it("asks which preset to use when there are several", async () => {
+        mockSchemaResponse([preset("default"), preset("gandin")]);
+        const modals = recordModals();
+
+        renderForm();
+
+        await waitFor(() =>
+            expect(modals).toEqual(["Choose Default Parameters"])
+        );
+        expect(
+            screen.getByRole("button", { name: /load defaults/i })
+        ).toBeInTheDocument();
+    });
+
+    it("applies the remembered preset instead of asking again", async () => {
+        localStorage.setItem("odt.preset.oligoseq", "gandin");
+        const get = mockSchemaResponse([preset("default"), preset("gandin")]);
+        const modals = recordModals();
+
+        renderForm();
+
+        await waitFor(() =>
+            expect(get).toHaveBeenCalledWith(PRESETS_URL, expect.anything())
+        );
+        await screen.findByRole("button", { name: /load defaults/i });
+        expect(modals).toEqual([]);
+        expect(localStorage.getItem("odt.preset.oligoseq")).toBe("gandin");
     });
 });
