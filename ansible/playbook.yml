@@ -15,11 +15,18 @@
   hosts: swarm
   become: true
   tasks:
+    - name: Apply security hardening
+      ansible.builtin.import_tasks: tasks/hardening.yml
     - name: Configure system components
       ansible.builtin.import_tasks: tasks/system.yml
     - name: Update and install system packages
       ansible.builtin.import_tasks: tasks/packages.yml
   handlers:
+    - name: Reload CVE-2026-98432 nftables rules
+      ansible.builtin.systemd:
+        name: nft-cve-2026-98432
+        state: restarted
+        daemon_reload: true
     - name: Perform reboot
       ansible.builtin.reboot:
     - name: Reset connection
