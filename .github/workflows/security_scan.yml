@@ -24,7 +24,7 @@ env:
 jobs:
   published-image-scan:
     name: Scan published ${{ matrix.image_name }} image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     strategy:
       fail-fast: false
