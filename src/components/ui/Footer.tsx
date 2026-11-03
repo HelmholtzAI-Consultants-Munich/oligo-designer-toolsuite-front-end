@@ -49,6 +49,15 @@ export default function Footer() {
                 </p>
                 <Nav as="ul" variant="tight">
                     <Nav.Item as="li">
+                        <Nav.Link
+                            href={`https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/blob/${ODT_CLOUD_VERSION}/LICENSE`}
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            Licensed under MIT
+                        </Nav.Link>
+                    </Nav.Item>
+                    <Nav.Item as="li">
                         <Nav.Link as={Link} target="_blank" to="/terms">
                             Terms of Service
                         </Nav.Link>

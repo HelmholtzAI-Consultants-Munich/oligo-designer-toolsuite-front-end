@@ -12,7 +12,7 @@ permissions:
 jobs:
   detect-changes:
     name: Detect Changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
@@ -43,7 +43,7 @@ jobs:
 
   python-lint:
     name: Python Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: detect-changes
     if: ${{ github.event_name != 'pull_request' || needs.detect-changes.outputs.backend == 'true' }}
     timeout-minutes: 5
@@ -83,7 +83,7 @@ jobs:
 
   python-format:
     name: Python Format
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: detect-changes
     if: ${{ github.event_name != 'pull_request' || needs.detect-changes.outputs.backend == 'true' }}
     timeout-minutes: 5
@@ -123,7 +123,7 @@ jobs:
 
   backend-typecheck:
     name: Backend Typecheck
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: detect-changes
     if: ${{ github.event_name != 'pull_request' || needs.detect-changes.outputs.backend == 'true' }}
     timeout-minutes: 10
@@ -160,7 +160,7 @@ jobs:
 
   frontend-lint:
     name: Frontend Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: detect-changes
     if: ${{ github.event_name != 'pull_request' || needs.detect-changes.outputs.frontend == 'true' }}
     timeout-minutes: 5
@@ -199,7 +199,7 @@ jobs:
 
   frontend-format:
     name: Frontend Format
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: detect-changes
     if: ${{ github.event_name != 'pull_request' || needs.detect-changes.outputs.frontend == 'true' }}
     timeout-minutes: 5
@@ -238,7 +238,7 @@ jobs:
 
   frontend-typscript:
     name: Frontend TypeScript
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: detect-changes
     if: ${{ github.event_name != 'pull_request' || needs.detect-changes.outputs.frontend == 'true' }}
     timeout-minutes: 10
