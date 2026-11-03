@@ -1,0 +1,36 @@
+---
+- name: Install nftables
+  ansible.builtin.apt:
+    pkg:
+      - nftables
+    state: present
+    update_cache: true
+
+# Temporary mitigation until a patched kernel is running, see ansible/README.md
+- name: Mitigate CVE-2026-98432
+  block:
+    - name: Copy CVE-2026-98432 nftables rules
+      ansible.builtin.copy:
+        src: files/nftables-cve-2026-98432.nft
+        dest: /etc/nftables-cve-2026-98432.nft
+        owner: root
+        group: root
+        mode: "0644"
+        validate: /usr/sbin/nft -c -f %s
+      notify: Reload CVE-2026-98432 nftables rules
+
+    - name: Copy CVE-2026-98432 systemd unit
+      ansible.builtin.copy:
+        src: files/nft-cve-2026-98432.service
+        dest: /etc/systemd/system/nft-cve-2026-98432.service
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reload CVE-2026-98432 nftables rules
+
+    - name: Enable and start CVE-2026-98432 nftables rules
+      ansible.builtin.systemd:
+        name: nft-cve-2026-98432
+        enabled: true
+        state: started
+        daemon_reload: true

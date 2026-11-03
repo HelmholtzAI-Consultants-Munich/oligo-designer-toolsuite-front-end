@@ -7,7 +7,7 @@
 
 - name: Check whether reboot required
   ansible.builtin.stat:
-    path: /tmp/reboot-required
+    path: /var/run/reboot-required
     get_checksum: false
   register: reboot
   changed_when: reboot.stat.exists

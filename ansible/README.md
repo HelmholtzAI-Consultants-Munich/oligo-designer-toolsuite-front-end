@@ -81,6 +81,23 @@ The reasoning for choosing the weakest node as the Docker Swarm Manager is as fo
 odt-main only serves our frontend as a static bundle. Thus, we expect very little stress put upon the VM.
 In contrast, odt-node-0 is tasked with the heavy lifting - providing the backend API and executing ODT pipelines among other things. It is thus more likely to suffer from unexpected outages or unscheduled maintenance. Overall, odt-main is more reliable as a management (and monitoring) node.
 
+### Host Firewall
+
+Apart from the OpenStack security groups, the VMs filter traffic with nftables. Docker manages its own nftables tables (via iptables-nft), so we never touch those and never use `/etc/nftables.conf`, whose default `flush ruleset` would delete Docker's rules. Instead, each mitigation lives in its own table, named after the CVE it mitigates, and is loaded at boot by its own systemd unit. Both are installed by [`tasks/hardening.yml`](tasks/hardening.yml).
+
+| CVE            | nftables table   | systemd unit         | Rule                                                               |
+| :------------: | :--------------: | :------------------: | :----------------------------------------------------------------: |
+| CVE-2026-98432 | `cve_2026_98432` | `nft-cve-2026-98432` | drop incoming IPv4 TCP packets carrying IP options |
+
+To check a mitigation on a VM:
+
+```bash
+systemctl status nft-cve-2026-98432
+sudo nft list table ip cve_2026_98432   # rules and drop counter
+```
+
+Once a patched kernel is running (`uname -r`), the mitigation can be removed: delete its tasks and files from this repo, then run `sudo systemctl disable --now nft-cve-2026-98432` and remove `/etc/systemd/system/nft-cve-2026-98432.service` and `/etc/nftables-cve-2026-98432.nft` on each VM.
+
 ## References
 
 - info on dynamic OpenStack inventory loading at [openstack_inventory docs](https://docs.ansible.com/projects/ansible/latest/collections/openstack/cloud/openstack_inventory.html#ansible-collections-openstack-cloud-openstack-inventory)
