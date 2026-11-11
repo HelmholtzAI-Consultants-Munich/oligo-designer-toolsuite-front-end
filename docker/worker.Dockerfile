@@ -48,6 +48,7 @@ RUN --mount=type=cache,target=/opt/conda/pkgs,uid=$MAMBA_USER_ID \
 
 # --- Copy Celery worker ---
 WORKDIR /app
+
 # Copy the entire backend directory
 COPY --chown=$MAMBA_USER:$MAMBA_USER backend backend
 
