@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   deploy-ansible-playbook:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     concurrency: deploy
 
     steps:
