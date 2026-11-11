@@ -20,8 +20,15 @@
     - name: Update and install system packages
       ansible.builtin.import_tasks: tasks/packages.yml
   handlers:
-    - name: Perform reboot
+    # Workers are only reachable via the manager (jump host), so reboot them first while it is still up.
+    - name: Reboot workers
       ansible.builtin.reboot:
+      when: inventory_hostname in groups['swarm_workers']
+      listen: Perform reboot
+    - name: Reboot managers
+      ansible.builtin.reboot:
+      when: inventory_hostname in groups['swarm_managers']
+      listen: Perform reboot
     - name: Reset connection
       ansible.builtin.meta: reset_connection
     - name: Wait slightly
