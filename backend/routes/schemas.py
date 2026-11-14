@@ -5,11 +5,16 @@ from disk, so a new ODT version changes the forms without a checked-in file to r
 """
 
 import json
+from functools import cache
 from hashlib import sha256
 from http import HTTPStatus
+from importlib.resources import files
 
-from flask import Blueprint, Response, abort, request
+import yaml
+from flask import Blueprint, Response, abort, jsonify, request
+from glom import delete
 
+from backend.constants import PIPELINE_FILE_INPUT
 from backend.worker.models import FRONT_END_SCHEMAS, build_pipeline_schema
 
 schemas_bp = Blueprint("schemas", __name__)
@@ -53,3 +58,73 @@ def pipeline_schema(pipeline_name: str) -> Response:
     # updates the response in place; its return value is typed as werkzeug's base `Response`
     response.make_conditional(request)
     return response
+
+
+# The file name prefix of each pipeline's example configs shipped by ODT. A suffix after it names a
+# variant, e.g. `cycle_hcr_probe_designer_gandin.yaml` holds the defaults from Gandin et al.
+PRESET_FILE_PREFIXES = {
+    "oligoseq": "oligo_seq_probe_designer",
+    "scrinshot": "scrinshot_probe_designer",
+    "merfish": "merfish_probe_designer",
+    "seqfish": "seqfish_plus_probe_designer",
+    "hcr": "hcr_probe_designer",
+    "cyclehcr": "cycle_hcr_probe_designer",
+}
+
+
+@cache
+def load_presets(pipeline_name: str) -> list[dict]:
+    """Loads the example configs ODT ships for a pipeline, ready to fill its form.
+
+    Arguments:
+        pipeline_name {str} -- the pipeline, e.g. "hcr"
+
+    Returns:
+        list[dict] -- one preset per YAML file, with an id, a label and the config; empty if
+        the installed ODT has no configs
+    """
+    try:
+        config_dir = files("oligo_designer_toolsuite.configs")
+    except ModuleNotFoundError:
+        return []
+
+    prefix = PRESET_FILE_PREFIXES[pipeline_name]
+    presets = []
+    for file in sorted(config_dir.iterdir(), key=lambda f: f.name):
+        if not (file.name.startswith(prefix) and file.name.endswith(".yaml")):
+            continue
+        preset_id = file.name.removeprefix(prefix).removesuffix(".yaml").lstrip("_") or "default"
+        config = yaml.safe_load(file.read_text())
+        # the file paths are local to ODT's repository, so the user uploads or generates their
+        # own; `general` is not part of the form
+        schema_version = config.pop("schema_version", None)
+        config.pop("required_parameters", None)
+        config.pop("general", None)
+        for path in PIPELINE_FILE_INPUT.get(pipeline_name, []):
+            delete(config, path, ignore_missing=True)
+        presets.append(
+            {
+                "id": preset_id,
+                "label": preset_id.replace("_", " ").title(),
+                "payload": {
+                    "_meta": {"version": schema_version, "pipeline": pipeline_name},
+                    "config": config,
+                },
+            }
+        )
+    return presets
+
+
+@schemas_bp.route("/api/pipelines/<pipeline_name>/presets", methods=["GET"])
+def pipeline_presets(pipeline_name: str) -> Response:
+    """Get the default configs a user can pick from for a pipeline.
+
+    Arguments:
+        pipeline_name {str} -- the pipeline, e.g. "hcr"
+
+    Returns:
+        flask.Response -- the list of presets, or 404 if the pipeline does not exist
+    """
+    if pipeline_name not in FRONT_END_SCHEMAS:
+        abort(HTTPStatus.NOT_FOUND, description=f'Pipeline "{pipeline_name}" does not exist')
+    return jsonify(load_presets(pipeline_name))

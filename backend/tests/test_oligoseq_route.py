@@ -2,6 +2,7 @@ import json
 import os
 
 import pytest
+from oligo_designer_toolsuite import _version as odt_version
 
 from backend.extensions import db
 from backend.tests.conftest import get_with_check, post
@@ -26,6 +27,18 @@ def test_oligoseq_authenticated(client, dummy_form, mock_celery, authenticated_u
     # Confirm Mongo updated status
     updated = get_with_check({"_id": run_id}, db.runs)
     assert updated["status"] in {"pending", "started"}
+
+
+def test_oligoseq_stamps_odt_build_on_run_config(client, dummy_form, mock_celery, authenticated_user):
+    """The stored run config records the ODT version, for debugging a run later."""
+    dummy_form["pipeline_run_config"] = {"_meta": {"pipeline": "oligoseq", "version": 2}, "config": {}}
+
+    response = post(client, "/api/oligoseq", dummy_form)
+    run_id = parse_run_id(response.get_json()["run_id"])
+
+    stored = get_with_check({"_id": run_id}, db.runs)["pipeline_run_config"]
+    assert stored["_meta"]["odt"]["version"] == odt_version.version
+    assert "commit" in stored["_meta"]["odt"]
 
 
 def test_oligoseq_unauthenticated(client, dummy_form, mock_celery, session_user):
